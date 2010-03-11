@@ -1,4 +1,3 @@
-
 #if !defined(_SERVERMASTER_HPP_INCLUDED_)
 #define _SERVERMASTER_HPP_INCLUDED_
 
@@ -6,14 +5,13 @@
 
 class SessionDriver;
 class InternetServer;
-class ServerMaster;
 
 class ServerMaster {
 public:
   ServerMaster(void);
   virtual ~ServerMaster(void) = 0;
   virtual SessionFactory *GetSessionFactory(void) = 0;
-  virtual SessionDriver *NewDriver(InternetServer *server, int pipeFd, ServerMaster *master) = 0;
+  virtual SessionDriver *NewDriver(InternetServer *server, int pipeFd) = 0;
 };
 
 #endif //_SERVERMASTER_HPP_INCLUDED_

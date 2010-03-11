@@ -1,0 +1,6 @@
+1)  Create a project and a main file
+
+2)  Figure out how to do this listening socket thing.
+
+)  More things as they occur to me
+

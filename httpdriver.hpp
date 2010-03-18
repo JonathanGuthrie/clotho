@@ -5,7 +5,7 @@
 
 class HttpDriver : public SessionDriver {
 public:
-  HttpDriver(InternetServer *s, int pipe, ServerMaster *master);
+  HttpDriver(InternetServer *s, ServerMaster *master);
   virtual ~HttpDriver();
   virtual void DoWork(void);
   virtual void NewSession(Socket *s);

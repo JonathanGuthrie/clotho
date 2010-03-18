@@ -12,6 +12,6 @@ SessionFactory *HttpMaster::GetSessionFactory(void) {
   return &m_factory;
 }
 
-SessionDriver *HttpMaster::NewDriver(InternetServer *server, int pipeFd) {
-  return new HttpDriver(server, pipeFd, this);
+SessionDriver *HttpMaster::NewDriver(InternetServer *server) {
+  return new HttpDriver(server, this);
 }

@@ -9,7 +9,7 @@ public:
   HttpMaster(void);
   virtual ~HttpMaster(void);
   virtual SessionFactory *GetSessionFactory(void);
-  virtual SessionDriver *NewDriver(InternetServer *server, int pipeFd);
+  virtual SessionDriver *NewDriver(InternetServer *server);
 
 private:
   HttpFactory m_factory;

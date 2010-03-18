@@ -4,7 +4,7 @@
 #include "httpdriver.hpp"
 #include "httpsession.hpp"
 
-HttpDriver::HttpDriver(InternetServer *s, int pipe, ServerMaster *master) : SessionDriver (s, pipe, master) {
+HttpDriver::HttpDriver(InternetServer *s, ServerMaster *master) : SessionDriver (s, master) {
   m_sock = NULL;
   m_session = NULL;
   pthread_mutex_init(&m_workMutex, NULL);

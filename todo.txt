@@ -1,9 +1,0 @@
-done)  Create a project and a main file
-
-done)  Figure out how to do this listening socket thing. (done through a new
-  server library.)
-
-3) Receive the http request and parse the headers
-
-)  More things as they occur to me
-

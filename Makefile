@@ -7,7 +7,7 @@ CXXFLAGS=-g -Wall -fPIC
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libserverlib.so.1
+LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libcppserver.so.1
 
 SOURCES=internetsession.cpp \
 	socket.cpp \
@@ -18,7 +18,7 @@ SOURCES=internetsession.cpp \
 	sessionfactory.cpp \
 	servermaster.cpp
 
-libserverlib.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o sessionfactory.o servermaster.o
+libcppserver.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o sessionfactory.o servermaster.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)
@@ -40,5 +40,5 @@ sessionfactory.o: Makefile
 servermaster.o: Makefile
 
 clean:
-	rm -f *.o *.d libserverlib.so.1.1
+	rm -f *.o *.d libcppserver.so.1.1
 

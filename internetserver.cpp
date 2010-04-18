@@ -4,11 +4,13 @@
 
 #include "internetserver.hpp"
 #include "servermaster.hpp"
+#include "deltaqueue.hpp"
 
 InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
   if (0 > pipe(m_pipeFd)) {
     throw ServerErrorException(errno);
   }
+  m_timerQueue = new DeltaQueue;
   m_workerCount = num_workers;
   m_master = master;
   m_isRunning = true;
@@ -114,7 +116,7 @@ void *InternetServer::TimerQueueFunction(void *d) {
   while(t->m_isRunning) {
     sleep(1);
     // puts("tick");
-    t->m_timerQueue.Tick();
+    t->m_timerQueue->Tick();
   }
   return NULL;
 }
@@ -129,7 +131,7 @@ void InternetServer::WantsToReceive(int which) {
 
 
 void InternetServer::KillSession(SessionDriver *driver) {
-  m_timerQueue.PurgeSession(driver);
+  m_timerQueue->PurgeSession(driver);
   pthread_mutex_lock(&m_masterFdMutex);
   FD_CLR(driver->GetSocket()->SockNum(), &m_masterFdList);
   pthread_mutex_unlock(&m_masterFdMutex);
@@ -139,5 +141,5 @@ void InternetServer::KillSession(SessionDriver *driver) {
 
 
 void InternetServer::AddTimerAction(DeltaQueueAction *action) {
-  m_timerQueue.InsertNewAction(action);
+  m_timerQueue->InsertNewAction(action);
 }

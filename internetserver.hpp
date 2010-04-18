@@ -2,11 +2,12 @@
 #define _INTERNETSERVER_HPP_INCLUDED_
 
 #include "socket.hpp"
-#include "deltaqueue.hpp"
+#include "deltaqueueaction.hpp"
 #include "ThreadPool.hpp"
 
 class SessionDriver;
 class ServerMaster;
+class DeltaQueue;
 
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
@@ -43,7 +44,7 @@ private:
   pthread_mutex_t m_masterFdMutex;
   int m_pipeFd[2];
   ServerMaster *m_master;
-  DeltaQueue m_timerQueue;
+  DeltaQueue *m_timerQueue;
   int m_workerCount;
 };
 

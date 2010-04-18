@@ -44,14 +44,6 @@ private:
     bool m_StopRunning;
 };
 
-// tf must be a thread function that looks like this.  I need it because I can't figure out how to put it in with the
-// static void *worker_thread_function(void *instance_pointer)
-// {
-//    ThreadPool<TestHandler*>::WorkerThreadInfo *info = (ThreadPool<TestHandler*>::WorkerThreadInfo *)instance_pointer;
-//    info->m_Instance->WorkerThread(info->m_QueueToUse);
-//    return NULL;
-// }
-
 template <typename T>
 void *ThreadPool<T>::ThreadFunction(void *instance_pointer)
 {

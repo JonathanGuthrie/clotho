@@ -1,0 +1,204 @@
+THEORY OF OPERATION
+
+Introduction
+
+For several years, now, I've been writing servers for standard TCP-based 
+Internet protocols.  One server, in particular, was written and has languished,
+unreleased, for years.  I still enjoy working on it from time to time and I
+hope to release it one day.
+
+It just so happens, that I also have been working on servers for protocols that
+are based on HTTP.  These typically use Apache as their transport part and are
+actually written in some scripting langage, Python in our case because of the
+large number of readily-available libraries.  Of course, Apache is far from
+required as the applications barely use any of the functionality of a
+general-purpose Web server, preferring to pass all of the requests off to the
+application code for processing.
+
+Anyway, when I read an article on Mongoose in a recent Linux Journal, I had a
+brainstorm.  Mongoose is an embeddable Web server, which kind of turns the whole
+run your application inside of Apache idea inside-out.  Sort of.  It's more for
+putting a HTTP-based configuration API on top of some sort of other system than
+doing something whose core is a protocol based on HTTP.  When I tried Mongoose
+out, I quickly ran into the limitations.  In particular, I know that
+authentication is going to be a sticking point and Mongoose barely implements
+authentication.
+
+So, the brainstorm:  Why not write my own HTTP server?  I took an existing
+server and started modifying it to understand HTTP requests.  The more work
+I did in that conversion, the more I could see that there were parts of both
+servers that could be abstracted out and packaged separately, so I started to
+do that separation.  The end result of that abstraction effort is this library.
+
+
+An Introduction to Some Terms
+
+To begin, it is helpful to understand the way that this programmer uses certain
+terms.  So, here is a quick glossary.
+
+A server is a program that listens on a port for incoming connections and 
+creates a session for each one.
+
+A session is the work associated with a network connection from a client. It
+performs a series of actions and then exits, disconnecting the socket.
+
+An request is a message from a client.  It triggers some activity on the
+server and usually a response.  Most Internet protocols involve the client
+sending messages to a server and then processing the server's response, but
+that is hardly required.  Also, not all activity is due to a client's request.
+
+
+The Life Cycle of a Session
+
+To begin to understand how it all fits together, you have to start somewhere.
+The best place to begin to describe how things occur is by looking at the life
+cycle of a session.  How it is created, how it does the work that it does, and
+what happens to end the session.
+
+At the time the server is created, a number of session drivers are created.
+These drivers form the interface between the server threads and the (at least
+in principle) unthreaded session code.  When running, the listener thread calls
+accept() on the listening socket, and when that returns the listening thread
+invokes NewSession from the appropriate session driver to create a new session.
+
+The new session will transmit data or indicate its willingness to receive
+data through the driver class.  The server waits on all outstanding
+communications and invokes the DoWork method in the driver when there is
+data to be received.  When the session is over, for whatever reason, the
+server's KillSession call is invoked and the server pulls the session out of
+the list of active sessions, and then invokes the driver's DestroySession
+method to clean up the session's local data.
+
+
+How Asynchronous and Timed Operations Occur
+
+Asynchronous operations are an important part of any Internet server.  An
+example of an asynchronous operation would be a keepalive timer that fires
+off a message every so often to see if the other end is still there.  Other
+sorts of timed events include things that are synchronous, but which involve
+significant time elapsing.  An example of this would be a bad logon delay
+where the system stops responding for five seconds, say, if the user enters
+and invalid id/password combination.
+
+To support asynchronous and timed operations, the system defines a priority
+queue called a delta queue.  The delta queue class implements a pretty standard
+delta queue.  The TimerQueueFunction method of the Internet server checks for
+work to do once per second.  The actions taken by items in the delta queue are
+instances of classes derived from DeltaQueueAction.  The important method there
+is "HandleTimeout" which is called when the timer that was set for it runs out
+or when the item is purged for whatever reason.
+
+Typically, the driver is told by the session that a timer needs to be set, and
+the timer is responsible for adding the action to the timer queue and dealing
+with timeouts and for cleanups when it doesn't need the timer any more.
+
+
+Startup, Shutdown, Etc.
+
+Assuming that all of the correct subclasses have been defined, creating a new
+server involves defining a new instance of the proper master class, and then
+using a pointer to that master class to a constructor for InternetServer to 
+generate a new server.  The "Run" method is then invoked on the server.
+
+The "Run" method returns as soon as all of the threads are created.  Services
+are provided with no further interaction required from the main program.
+Typically a look is entered into checking for an exit condition at that point.
+When an exit condition is reached, the server is shut down by invoking the
+server's "Shutdown" method, which invokes each active driver's DestroySession
+method to nicely clean up (well as nicely as a "force close" operation can get)
+each session and then end the worker threads return with the server completely
+shut down and ready to be destroyed.
+
+
+Important Things to Remember
+
+The driver's DoWork method and whatever functions it call must not take a long
+time because you only have a limited number of threads in the pool and if all 
+of them are occupied with lenthy tasks, your system will stop responding.  If
+you have a task that requires a lot of CPU time, then this library is
+inappropriate for your task.  If you have something that takes a long time to
+do I/O, because of lengthy database queries or some such, it is better to fire
+off an asynchronous request and then fire off a timer to check on progress at a
+later time.  Or you could use a different library.
+
+
+The Parts of the System
+
+The ServerMaster Class (needs to be subclassed)
+
+The ServerMaster class creates an interface that must be implemented by the
+server programmer.  It's primary job is to know how that particular kind of
+server is configured because an HTTP server needs to be configured differently
+from an IMAP server which is different from an SMTP server.
+
+Classes derived from the ServerMaster class are responsible for generating a
+SessionFactory class (which knows how to produce sessions of a given type) and
+also responsible for creating session drivers of a particular type.
+
+
+The SessionDriver Class (needs to be subclassed)
+
+Classes derived from the SessionDriver class sit between the InternetServer,
+which does all the heavy lifting with sockets and threads, and classes derived
+from the InternetSession class, which know what to do with the data coming in
+from the socket.  They live mostly in the same space as the InternetServer
+class, but should be very lightweight as one of them will be created for each
+possible instance, but they also know how to create sessions for the particular
+kind of server that it implements.
+
+The DeltaQueueAction Class (needs to be subclassed)
+
+Classes derived from the DeltaQueueAction class define asynchronous or timed
+actions that the Internet server will keep track of and perform at the
+appropriate time.  To create an action, derive a subclass and populate the
+HandleTimeout function with the action to be taken.  The HandleTimeout method
+is passed a single argument, the boolean isPurge, which will be false if the
+timer has expired and true if the element was called due to a purge operation.
+
+The HandleTimeout method is called in the context of a worker thread, so the
+same rules apply to this call as apply to the DoWork methods in classes
+derived from the SessionDriver class:  Don't do anything that's going to take
+a long time. 
+
+The InternetServer Class
+
+The InternetServer Class implements a thread-pool based Internet server.  You
+create an instance of it by defining the address and port that it listens to,
+an instance of a ServerMaster class, and a worker thread count.  Then, you 
+call it's Run method to start servicing requests.  To shut the server down,
+call the Shutdown method.  The SessionDriver derivative classes will call the
+WantsToReceive, KillSession, and AddTimerAction methods to cause the server
+to do what they need to do to service requests.
+
+The InternetSession Class (needs to be subclassed)
+
+Classes derived from the InternetSession class implement the protocols that the
+servers support.  The general idea is that the InternetSession knows nothing
+about dealing with any of the things that the InternetServer class knows about,
+it just knows how to implement the messages associated with a protocol because
+that's hard enough.  Typically anything that involves a timeout will happen in
+the driver class, to allow the code in this class to focus on normal
+operations.
+
+The Socket Class
+
+This isn't very interesting.  It's a simple wrapper around Unix sockets.
+
+The Insensitive Class
+
+This defines an case-insensitive string because many protocols are written in
+such a way as to require case-insensitivity.
+
+ThreadPool.hpp
+
+The ThreadPool Template
+
+The ThreadPool template is a template that allows the InternetServer to define
+thread pools to perform the various operations.  In practice, this won't be
+called directly by a server implementer's code, but I think it is interesting
+enough to spend a little time describing.  The idea is that what defines a 
+thread pool is what happens when there's work to be done.  In the case of the
+ThreadPool template, what happens is the T.DoWork is called, where T.DoWork is
+a method in that class that takes no parameters.  Since that seems to suit a
+wide variety of circumstances, this class is appropriate for use in a wide
+variety of circumstances.

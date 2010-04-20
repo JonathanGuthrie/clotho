@@ -29,7 +29,7 @@ public:
     ~Socket();
     ssize_t Receive(uint8_t *buffer, size_t size);
     ssize_t Send(const uint8_t *data, size_t length);
-    int SockNum() { return sock; }
+    int SockNum() const { return sock; }
 };
 
 #endif // _SOCKET_HPP_INCLUDED_

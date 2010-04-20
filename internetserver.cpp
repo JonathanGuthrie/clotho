@@ -3,6 +3,7 @@
 #include <errno.h>
 
 #include "internetserver.hpp"
+#include "sessiondriver.hpp"
 #include "servermaster.hpp"
 #include "deltaqueue.hpp"
 
@@ -16,7 +17,7 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
   m_isRunning = true;
   m_listener = new Socket(bind_address, bind_port);
   for (int i=0; i<FD_SETSIZE; ++i) {
-    m_sessions[i] = master->NewDriver(this);
+    m_sessions[i] = new SessionDriver(this, m_master);
     // new SessionDriver(this, m_pipeFd[1], master);
   }
   FD_ZERO(&m_masterFdList);
@@ -122,11 +123,17 @@ void *InternetServer::TimerQueueFunction(void *d) {
 }
 
 
-void InternetServer::WantsToReceive(int which) {
+void InternetServer::WantsToReceive(SessionDriver *driver) {
   pthread_mutex_lock(&m_masterFdMutex);
-  FD_SET(which, &m_masterFdList);
+  FD_SET(driver->GetSocket()->SockNum(), &m_masterFdList);
   pthread_mutex_unlock(&m_masterFdMutex);
   ::write(m_pipeFd[1], "r", 1);
+}
+
+
+void InternetServer::WantsToSend(SessionDriver *driver, const uint8_t *buffer, size_t length) {
+  // To-do:  Deal with the case where the send would block
+  driver->GetSocket()->Send(buffer, length);
 }
 
 
@@ -142,4 +149,13 @@ void InternetServer::KillSession(SessionDriver *driver) {
 
 void InternetServer::AddTimerAction(DeltaQueueAction *action) {
   m_timerQueue->InsertNewAction(action);
+}
+
+
+void InternetServer::MutexLock(SessionDriver *driver) {
+  driver->Lock();
+}
+
+void InternetServer::MutexUnlock(SessionDriver *driver) {
+  driver->Unlock();
 }

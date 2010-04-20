@@ -1,3 +1,18 @@
-1)  ThreadPool.hpp should pull items off a single queue rather than push items
+done)  Lose the external socket class.
+
+2)  Get rid of the requirement that the InternetSession derivative classes know about locking the action queue
+
+3)  Make the driver visible again
+
+4)  ThreadPool.hpp should pull items off a single queue rather than push items
   onto the individual worker queues.  That will allow the most items to finish
   the most quickly
+
+5)  Add a tutorial with an example server.  Maybe an echo server.
+
+6)  Add doxygen header blocks.
+
+7)  Deal with the case where the socket might block on transmit
+
+8)  Use epoll instead of select
+

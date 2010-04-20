@@ -18,23 +18,24 @@ class ServerMaster;
 class SessionDriver
 {
 public:
-  SessionDriver(InternetServer *s, ServerMaster *master);
-  virtual ~SessionDriver();
-  virtual void DoWork(void) = 0;
-  virtual void NewSession(Socket *s) = 0;
-  virtual void DestroySession(void) = 0;
+  SessionDriver(InternetServer *server, ServerMaster *master);
+  ~SessionDriver();
+  void DoWork(void);
+  void NewSession(Socket *s);
+  void DestroySession(void);
   const InternetSession *GetSession(void) const { return m_session; }
   Socket *GetSocket(void) const { return m_sock; }
   InternetServer *GetServer(void) const { return m_server; }
   ServerMaster *GetMaster(void) const { return m_master; }
+  void Lock(void) { pthread_mutex_lock(&m_workMutex); }
+  void Unlock(void) { pthread_mutex_unlock(&m_workMutex); }
 
-protected:
+
+private:
   InternetServer *m_server;
   Socket *m_sock;
   InternetSession *m_session;
   ServerMaster *m_master;
-
-private:
   pthread_mutex_t m_workMutex;
 };
 

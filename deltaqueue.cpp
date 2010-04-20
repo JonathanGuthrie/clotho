@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "internetsession.hpp"
 #include "deltaqueue.hpp"
 #include "deltaqueueaction.hpp"
 
@@ -99,7 +100,7 @@ void DeltaQueue::PurgeSession(const SessionDriver *driver) {
     pthread_mutex_lock(&m_queueMutex);
     for(temp = m_queueHead; NULL != temp; temp=next) {
 	next = temp->next;
-	if (driver == temp->m_driver) {
+	if (driver == temp->m_session->GetDriver()) {
 	    if (NULL != next) {
 		next->m_delta += temp->m_delta;
 	    }

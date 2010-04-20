@@ -1,13 +1,18 @@
 #if !defined(_INTERNETSERVER_HPP_INCLUDED_)
 #define _INTERNETSERVER_HPP_INCLUDED_
 
-#include "socket.hpp"
+#include <string>
+
+#include <stdint.h>
+#include <netinet/in.h>
+
 #include "deltaqueueaction.hpp"
 #include "ThreadPool.hpp"
 
 class SessionDriver;
 class ServerMaster;
 class DeltaQueue;
+class Socket;
 
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
@@ -25,9 +30,13 @@ public:
   ~InternetServer();
   void Run();
   void Shutdown();
-  void WantsToReceive(int which);
+  void WantsToReceive(SessionDriver *driver);
+  void WantsToSend(SessionDriver *driver, const std::string s) { WantsToSend(driver, (uint8_t *)s.data(), s.size()); }
+  void WantsToSend(SessionDriver *driver, const uint8_t *buffer, size_t length);
   void KillSession(SessionDriver *driver);
   void AddTimerAction(DeltaQueueAction *action);
+  void MutexLock(SessionDriver *driver);
+  void MutexUnlock(SessionDriver *driver);
 
 private:
   bool m_isRunning;

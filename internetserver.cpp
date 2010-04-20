@@ -52,14 +52,10 @@ void InternetServer::Shutdown() {
   pthread_join(m_receiverThread, NULL);
   pthread_join(m_timerQueueThread, NULL);
 
-  std::string bye = "* BYE Server Shutting Down\r\n";
   for (int i=0; i<FD_SETSIZE; ++i) {
-      Socket *s;
-      if (NULL != (s = m_sessions[i]->GetSocket())) {
-	s->Send((uint8_t*)bye.data(), bye.size());
-      }
+      KillSession(m_sessions[i]);
       delete m_sessions[i];
-    }
+  }
   delete m_pool;
 }
 
@@ -135,9 +131,11 @@ void InternetServer::WantsToReceive(Socket *sock) {
 void InternetServer::KillSession(SessionDriver *driver) {
   m_timerQueue->PurgeSession(driver);
   pthread_mutex_lock(&m_masterFdMutex);
-  FD_CLR(driver->GetSocket()->SockNum(), &m_masterFdList);
+  if (NULL != driver->GetSocket()) {
+    FD_CLR(driver->GetSocket()->SockNum(), &m_masterFdList);
+    driver->DestroySession();
+  }
   pthread_mutex_unlock(&m_masterFdMutex);
-  driver->DestroySession();
   ::write(m_pipeFd[1], "r", 1);
 }
 

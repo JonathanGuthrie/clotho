@@ -3,6 +3,7 @@
 #include "internetsession.hpp"
 #include "deltaqueue.hpp"
 #include "deltaqueueaction.hpp"
+#include "sessiondriver.hpp"
 
 DeltaQueue::DeltaQueue() : m_queueHead(NULL) {
     pthread_mutex_init(&m_queueMutex, NULL);
@@ -51,7 +52,9 @@ void DeltaQueue::Tick() {
     while (NULL != temp) {
 	DeltaQueueAction *next = temp->next;
 
+	temp->m_session->GetDriver()->Lock();
 	temp->HandleTimeout(false);
+	temp->m_session->GetDriver()->Unlock();
 	delete temp;
 	temp = next;
     }

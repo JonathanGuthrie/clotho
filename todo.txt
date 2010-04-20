@@ -1,6 +1,6 @@
 done)  Lose the external socket class.
 
-2)  Get rid of the requirement that the InternetSession derivative classes know about locking the action queue
+done)  Get rid of the requirement that the InternetSession derivative classes know about locking the action queue
 
 done)  Make the driver visible again
 

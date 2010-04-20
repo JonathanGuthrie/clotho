@@ -1,6 +1,7 @@
 #include "sessiondriver.hpp"
 #include "internetserver.hpp"
 #include "servermaster.hpp"
+#include "socket.hpp"
 
 SessionDriver::SessionDriver(InternetServer *server, ServerMaster *master) : m_server(server), m_master(master) {
   m_sock = NULL;
@@ -42,4 +43,13 @@ void SessionDriver::DestroySession(void) {
 void SessionDriver::NewSession(Socket *s) {
   m_sock = s;
   m_session = m_master->NewSession(this, m_server);
+}
+
+
+void SessionDriver::WantsToReceive(void) {
+  m_server->WantsToReceive(m_sock);
+}
+
+void SessionDriver::WantsToSend(const uint8_t *buffer, size_t length) const {
+  m_sock->Send(buffer, length);
 }

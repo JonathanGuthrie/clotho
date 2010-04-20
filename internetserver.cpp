@@ -6,6 +6,7 @@
 #include "sessiondriver.hpp"
 #include "servermaster.hpp"
 #include "deltaqueue.hpp"
+#include "socket.hpp"
 
 InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
   if (0 > pipe(m_pipeFd)) {
@@ -123,17 +124,11 @@ void *InternetServer::TimerQueueFunction(void *d) {
 }
 
 
-void InternetServer::WantsToReceive(SessionDriver *driver) {
+void InternetServer::WantsToReceive(Socket *sock) {
   pthread_mutex_lock(&m_masterFdMutex);
-  FD_SET(driver->GetSocket()->SockNum(), &m_masterFdList);
+  FD_SET(sock->SockNum(), &m_masterFdList);
   pthread_mutex_unlock(&m_masterFdMutex);
   ::write(m_pipeFd[1], "r", 1);
-}
-
-
-void InternetServer::WantsToSend(SessionDriver *driver, const uint8_t *buffer, size_t length) {
-  // To-do:  Deal with the case where the send would block
-  driver->GetSocket()->Send(buffer, length);
 }
 
 
@@ -149,13 +144,4 @@ void InternetServer::KillSession(SessionDriver *driver) {
 
 void InternetServer::AddTimerAction(DeltaQueueAction *action) {
   m_timerQueue->InsertNewAction(action);
-}
-
-
-void InternetServer::MutexLock(SessionDriver *driver) {
-  driver->Lock();
-}
-
-void InternetServer::MutexUnlock(SessionDriver *driver) {
-  driver->Unlock();
 }

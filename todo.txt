@@ -2,7 +2,7 @@ done)  Lose the external socket class.
 
 2)  Get rid of the requirement that the InternetSession derivative classes know about locking the action queue
 
-3)  Make the driver visible again
+done)  Make the driver visible again
 
 4)  ThreadPool.hpp should pull items off a single queue rather than push items
   onto the individual worker queues.  That will allow the most items to finish

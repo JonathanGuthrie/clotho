@@ -2,13 +2,16 @@
 #define _SESSIONDRIVER_HPP_INCLUDED_
 
 #include <pthread.h>
+#include <string.h>
+#include <stdint.h>
 
-#include "socket.hpp"
 #include "internetsession.hpp"
+#include "insensitive.hpp"
 
 class InternetServer;
 class InternetSession;
 class ServerMaster;
+class Socket;
 
 // The SessionDriver class sits between the server, which does the listening
 // for more data, and the InternetSession, which does all the processing of the
@@ -29,6 +32,12 @@ public:
   ServerMaster *GetMaster(void) const { return m_master; }
   void Lock(void) { pthread_mutex_lock(&m_workMutex); }
   void Unlock(void) { pthread_mutex_unlock(&m_workMutex); }
+  void WantsToReceive(void);
+  void WantsToSend(const std::string &s) const { WantsToSend((uint8_t *)s.data(), s.size()); }
+  void WantsToSend(const insensitiveString &s) const { WantsToSend((uint8_t *)s.data(), s.size()); }
+  void WantsToSend(const char *buffer, size_t length) const { WantsToSend((uint8_t *)buffer, length); }
+  void WantsToSend(const char *buffer) const { WantsToSend((uint8_t *)buffer, strlen(buffer)); }
+  void WantsToSend(const uint8_t *buffer, size_t length) const;
 
 
 private:

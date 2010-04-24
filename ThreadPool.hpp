@@ -6,10 +6,7 @@
 
 #include "mutex.hpp"
 #include "cond.hpp"
-
-class ThreadPoolException
-{
-};
+#include "thread.hpp"
 
 // class MessageType must have a method called "void DoWork(void)"
 template <typename T>
@@ -40,7 +37,7 @@ private:
     int m_WorkerThreadCount;
     int m_NextWorkerThread;
     Mutex m_NextMutex;
-    pthread_t *m_WorkerIds;
+    Thread **m_WorkerThreads;
     WorkerThreadInfo *m_WorkerThreadParams;
     bool m_StopRunning;
 };
@@ -68,16 +65,13 @@ ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_t
     m_QueueEmpty = new Cond[m_WorkerThreadCount]();
     m_QueueFull = new Cond[m_WorkerThreadCount]();
 
-    m_WorkerIds = new pthread_t[m_WorkerThreadCount];
+    m_WorkerThreads = new Thread*[m_WorkerThreadCount];
     m_WorkerThreadParams = new WorkerThreadInfo[m_WorkerThreadCount];
     for (int i=0; i<m_WorkerThreadCount; ++i)
     {
 	m_WorkerThreadParams[i].m_Instance = this;
 	m_WorkerThreadParams[i].m_QueueToUse = i;
-	if (0 != pthread_create(&m_WorkerIds[i], NULL, ThreadFunction, &m_WorkerThreadParams[i]))
-	{
-	    throw ThreadPoolException();
-	}
+	m_WorkerThreads[i] = new Thread(ThreadFunction, &m_WorkerThreadParams[i]);
     }
 }
 
@@ -88,11 +82,11 @@ ThreadPool<T>::~ThreadPool(void)
     for (int i=0; i<m_WorkerThreadCount; ++i)
     {
         m_QueueFull[i].Signal();
-	pthread_join(m_WorkerIds[i], NULL);
+	delete m_WorkerThreads[i];
     }
 
     delete[] m_WorkerThreadParams;
-    delete[] m_WorkerIds;
+    delete[] m_WorkerThreads;
     delete[] m_QueueFull;
     delete[] m_QueueEmpty;
     delete[] m_QueueMutex;

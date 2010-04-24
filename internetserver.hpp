@@ -7,13 +7,13 @@
 #include <netinet/in.h>
 
 #include "deltaqueueaction.hpp"
-#include "ThreadPool.hpp"
 
 class SessionDriver;
 class ServerMaster;
 class DeltaQueue;
 class Socket;
 
+template <typename T>class ThreadPool;
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
 class ServerErrorException

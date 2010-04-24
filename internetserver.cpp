@@ -8,6 +8,9 @@
 #include "deltaqueue.hpp"
 #include "socket.hpp"
 
+#include "ThreadPool.hpp"
+typedef ThreadPool<SessionDriver *> WorkerPool;
+
 InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
   if (0 > pipe(m_pipeFd)) {
     throw ServerErrorException(errno);

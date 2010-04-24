@@ -4,7 +4,8 @@
 #include <queue>
 #include <list>
 
-#include <pthread.h>
+#include "mutex.hpp"
+#include "cond.hpp"
 
 class ThreadPoolException
 {
@@ -33,12 +34,12 @@ public:
 private:
     Tqueue *m_TheQueues;
     unsigned long m_QueueHighwater;
-    pthread_mutex_t *m_QueueMutex;
-    pthread_cond_t *m_QueueEmpty;
-    pthread_cond_t *m_QueueFull;
+    Mutex *m_QueueMutex;
+    Cond *m_QueueEmpty;
+    Cond *m_QueueFull;
     int m_WorkerThreadCount;
     int m_NextWorkerThread;
-    pthread_mutex_t m_NextMutex;
+    Mutex m_NextMutex;
     pthread_t *m_WorkerIds;
     WorkerThreadInfo *m_WorkerThreadParams;
     bool m_StopRunning;
@@ -58,22 +59,14 @@ ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_t
 {
     m_QueueHighwater = queue_highwater;
     m_WorkerThreadCount = numThreads;
-    pthread_mutex_init(&m_NextMutex, NULL);
     m_NextWorkerThread = 0;
     m_StopRunning = false;
 
     m_TheQueues = new typename ThreadPool<T>::Tqueue[m_WorkerThreadCount];
 
-    m_QueueMutex = new pthread_mutex_t[m_WorkerThreadCount];
-    m_QueueEmpty = new pthread_cond_t[m_WorkerThreadCount];
-    m_QueueFull = new pthread_cond_t[m_WorkerThreadCount];
-
-    for (int i=0; i<m_WorkerThreadCount; ++i)
-    {
-	pthread_mutex_init(&m_QueueMutex[i], NULL);
-	pthread_cond_init(&m_QueueEmpty[i], NULL);
-	pthread_cond_init(&m_QueueFull[i], NULL);
-    }
+    m_QueueMutex = new Mutex[m_WorkerThreadCount]();
+    m_QueueEmpty = new Cond[m_WorkerThreadCount]();
+    m_QueueFull = new Cond[m_WorkerThreadCount]();
 
     m_WorkerIds = new pthread_t[m_WorkerThreadCount];
     m_WorkerThreadParams = new WorkerThreadInfo[m_WorkerThreadCount];
@@ -94,15 +87,8 @@ ThreadPool<T>::~ThreadPool(void)
     m_StopRunning = true;
     for (int i=0; i<m_WorkerThreadCount; ++i)
     {
-	pthread_cond_signal(&m_QueueFull[i]);
+        m_QueueFull[i].Signal();
 	pthread_join(m_WorkerIds[i], NULL);
-    }
-
-    for (int i=0; i<m_WorkerThreadCount; ++i)
-    {
-	pthread_cond_destroy(&m_QueueFull[i]);
-	pthread_cond_destroy(&m_QueueEmpty[i]);
-	pthread_mutex_destroy(&m_QueueMutex[i]);
     }
 
     delete[] m_WorkerThreadParams;
@@ -121,20 +107,20 @@ ThreadPool<T>::~ThreadPool(void)
 template <typename T>
 void ThreadPool<T>::SendMessage(T message)
 {
-    pthread_mutex_lock(&m_NextMutex);
+    m_NextMutex.Lock();
     m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
     int worker = m_NextWorkerThread;
-    pthread_mutex_unlock(&m_NextMutex);
+    m_NextMutex.Unlock();
 
     // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    pthread_mutex_lock(&m_QueueMutex[worker]);
+    m_QueueMutex[worker].Lock();
     while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size()))
     {
-	pthread_cond_wait(&m_QueueEmpty[worker], &m_QueueMutex[worker]);
+      m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
     }
     m_TheQueues[worker].push(message);
-    pthread_mutex_unlock(&m_QueueMutex[worker]);
-    pthread_cond_signal(&m_QueueFull[worker]);
+    m_QueueMutex[worker].Unlock();
+    m_QueueFull[worker].Signal();
 }
 
 /*
@@ -145,25 +131,24 @@ void ThreadPool<T>::SendMessage(T message)
 template <typename T>
 void ThreadPool<T>::SendMessages(Tqueue &messages)
 {
-    pthread_mutex_lock(&m_NextMutex);
+    m_NextMutex.Lock();
     m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
     int worker = m_NextWorkerThread;
-    pthread_mutex_unlock(&m_NextMutex);
+    m_NextMutex.Unlock();
 
     // SYZYGY -- the messages should be distributed across multiple queues
     // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    pthread_mutex_lock(&m_QueueMutex[worker]);
-    while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size()))
-    {
-	pthread_cond_wait(&m_QueueEmpty[worker], &m_QueueMutex[worker]);
+    m_QueueMutex[worker].Lock();
+    while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size())) {
+        m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
     }
     while(!messages.empty())
     {
 	m_TheQueues[worker].push(messages.front());
 	messages.pop();
     }
-    pthread_mutex_unlock(&m_QueueMutex[worker]);
-    pthread_cond_signal(&m_QueueFull[worker]);
+    m_QueueMutex[worker].Unlock();
+    m_QueueFull[worker].Signal();
 }
 
 /*
@@ -174,23 +159,23 @@ void ThreadPool<T>::SendMessages(Tqueue &messages)
 template <typename T>
 void ThreadPool<T>::SendMessages(Tlist &messages)
 {
-    pthread_mutex_lock(&m_NextMutex);
+    m_NextMutex.Lock();
     m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
     int worker = m_NextWorkerThread;
-    pthread_mutex_unlock(&m_NextMutex);
+    m_NextMutex.Unlock();
 
     // SYZYGY -- the messages should be distributed across multiple queues
     // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    pthread_mutex_lock(&m_QueueMutex[worker]);
+    m_QueueMutex[worker].Lock();
     while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size()))
     {
-	pthread_cond_wait(&m_QueueEmpty[worker], &m_QueueMutex[worker]);
+        m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
     }
     for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
 	m_TheQueues[worker].push(*i);
     }
-    pthread_mutex_unlock(&m_QueueMutex[worker]);
-    pthread_cond_signal(&m_QueueFull[worker]);
+    m_QueueMutex[worker].Unlock();
+    m_QueueFull[worker].Signal();
 }
 
 template <typename T>
@@ -199,10 +184,10 @@ void ThreadPool<T>::WorkerThread(int queue_number)
     // std::cout << "In the worker thread method, I've got a listener for queue " << queue_number << std::endl;
     while(1)
     {
-	pthread_mutex_lock(&m_QueueMutex[queue_number]);
+        m_QueueMutex[queue_number].Lock();
 	while(m_TheQueues[queue_number].empty())
 	{
-	    pthread_cond_wait(&m_QueueFull[queue_number], &m_QueueMutex[queue_number]);
+	    m_QueueFull[queue_number].Wait(&m_QueueMutex[queue_number]);
 	    if (m_StopRunning)
 	    {
 		break;
@@ -217,8 +202,8 @@ void ThreadPool<T>::WorkerThread(int queue_number)
 	    m_TheQueues[queue_number].front()->DoWork();
 	    m_TheQueues[queue_number].pop();
 	}
-	pthread_mutex_unlock(&m_QueueMutex[queue_number]);
-	pthread_cond_signal(&m_QueueEmpty[queue_number]);
+	m_QueueMutex[queue_number].Unlock();
+	m_QueueEmpty[queue_number].Signal();
     }
 }
 

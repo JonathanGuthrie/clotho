@@ -2,11 +2,12 @@
 #include "internetserver.hpp"
 #include "servermaster.hpp"
 #include "socket.hpp"
+#include "mutex.hpp"
 
 SessionDriver::SessionDriver(InternetServer *server, ServerMaster *master) : m_server(server), m_master(master) {
   m_sock = NULL;
   m_session = NULL;
-  pthread_mutex_init(&m_workMutex, NULL);
+  m_workMutex = new Mutex();
 }
 
 
@@ -52,4 +53,12 @@ void SessionDriver::WantsToReceive(void) {
 
 void SessionDriver::WantsToSend(const uint8_t *buffer, size_t length) const {
   m_sock->Send(buffer, length);
+}
+
+void SessionDriver::Lock(void) {
+  m_workMutex->Lock();
+}
+
+void SessionDriver::Unlock(void) {
+  m_workMutex->Unlock();
 }

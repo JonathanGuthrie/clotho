@@ -12,6 +12,7 @@ class SessionDriver;
 class ServerMaster;
 class DeltaQueue;
 class Socket;
+class Mutex;
 
 template <typename T>class ThreadPool;
 typedef ThreadPool<SessionDriver *> WorkerPool;
@@ -46,7 +47,7 @@ private:
   pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;
   SessionDriver *m_sessions[FD_SETSIZE];
   fd_set m_masterFdList;
-  pthread_mutex_t m_masterFdMutex;
+  Mutex *m_masterFdMutex;
   int m_pipeFd[2];
   ServerMaster *m_master;
   DeltaQueue *m_timerQueue;

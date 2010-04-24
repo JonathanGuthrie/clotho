@@ -15,9 +15,11 @@ SOURCES=internetsession.cpp \
 	deltaqueue.cpp \
 	deltaqueueaction.cpp \
 	sessiondriver.cpp \
-	servermaster.cpp
+	servermaster.cpp \
+	mutex.cpp \
+	cond.cpp
 
-libcppserver.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o
+libcppserver.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)
@@ -35,6 +37,10 @@ deltaqueueaction.o: Makefile
 sessiondriver.o: Makefile
 
 servermaster.o: Makefile
+
+mutex.o: Makefile
+
+cond.o: Makefile
 
 clean:
 	rm -f *.o *.d libcppserver.so.1.1

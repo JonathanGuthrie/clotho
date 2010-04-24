@@ -2,8 +2,9 @@
 #define _DELTAQUEUE_HPP_INCLUDED_
 
 #include "deltaqueueaction.hpp"
+#include "mutex.hpp"
 
-#include "string"
+#include <string>
 
 class SessionDriver;
 
@@ -16,7 +17,7 @@ public:
     void PurgeSession(const SessionDriver *driver);
 
 private:
-    pthread_mutex_t m_queueMutex;
+    Mutex m_queueMutex;
     DeltaQueueAction *m_queueHead;
 };
 

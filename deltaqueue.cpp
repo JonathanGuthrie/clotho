@@ -6,7 +6,6 @@
 #include "sessiondriver.hpp"
 
 DeltaQueue::DeltaQueue() : m_queueHead(NULL) {
-    pthread_mutex_init(&m_queueMutex, NULL);
 }
 
 
@@ -32,7 +31,7 @@ DeltaQueue::DeltaQueue() : m_queueHead(NULL) {
 void DeltaQueue::Tick() {
     DeltaQueueAction *temp = NULL;
 
-    pthread_mutex_lock(&m_queueMutex);
+    m_queueMutex.Lock();
     // decrement head
     if (NULL != m_queueHead) {
 	--m_queueHead->m_delta;
@@ -48,7 +47,7 @@ void DeltaQueue::Tick() {
 	    endMarker->next = NULL;
 	}
     }
-    pthread_mutex_unlock(&m_queueMutex);
+    m_queueMutex.Unlock();
     while (NULL != temp) {
 	DeltaQueueAction *next = temp->next;
 
@@ -63,7 +62,7 @@ void DeltaQueue::Tick() {
 
 void DeltaQueue::InsertNewAction(DeltaQueueAction *action)
 {
-    pthread_mutex_lock(&m_queueMutex);
+    m_queueMutex.Lock();
     if ((NULL == m_queueHead) || (m_queueHead->m_delta > action->m_delta))
     {
 	if (NULL != m_queueHead)
@@ -91,7 +90,7 @@ void DeltaQueue::InsertNewAction(DeltaQueueAction *action)
 	action->next = item->next;
 	item->next = action;
     }
-    pthread_mutex_unlock(&m_queueMutex);
+    m_queueMutex.Unlock();
 }
 
 
@@ -100,7 +99,7 @@ void DeltaQueue::PurgeSession(const SessionDriver *driver) {
     DeltaQueueAction *prev = NULL;
     DeltaQueueAction *purgeList = NULL;
 
-    pthread_mutex_lock(&m_queueMutex);
+    m_queueMutex.Lock();
     for(temp = m_queueHead; NULL != temp; temp=next) {
 	next = temp->next;
 	if (driver == temp->m_session->GetDriver()) {
@@ -120,7 +119,7 @@ void DeltaQueue::PurgeSession(const SessionDriver *driver) {
 	    prev = temp;
 	}
     }
-    pthread_mutex_unlock(&m_queueMutex);
+    m_queueMutex.Unlock();
     while (NULL != purgeList) {
 	DeltaQueueAction *next = purgeList->next;
 

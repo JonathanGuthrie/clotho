@@ -26,7 +26,7 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
   }
   FD_ZERO(&m_masterFdList);
   FD_SET(m_pipeFd[0], &m_masterFdList);
-  pthread_mutex_init(&m_masterFdMutex, NULL);
+  m_masterFdMutex = new Mutex();
 }
 
 
@@ -83,9 +83,9 @@ void *InternetServer::ReceiverThreadFunction(void *d) {
   while(t->m_isRunning) {
       int maxFd;
       fd_set localFdList;
-      pthread_mutex_lock(&t->m_masterFdMutex);
+      t->m_masterFdMutex->Lock();
       localFdList = t->m_masterFdList;
-      pthread_mutex_unlock(&t->m_masterFdMutex);
+      t->m_masterFdMutex->Unlock();
       for (int i=t->m_pipeFd[0]; i<FD_SETSIZE; ++i) {
 	  if (FD_ISSET(i, &localFdList)) {
 	      maxFd = i+1;
@@ -96,10 +96,10 @@ void *InternetServer::ReceiverThreadFunction(void *d) {
 	      if (FD_ISSET(i, &localFdList)) {
 		  if (i != t->m_pipeFd[0]) {
 		      t->m_pool->SendMessage(t->m_sessions[i]);
-		      pthread_mutex_lock(&t->m_masterFdMutex);
+		      t->m_masterFdMutex->Lock();
 		      FD_CLR(i, &t->m_masterFdList);
-		      pthread_mutex_unlock(&t->m_masterFdMutex);
-		    }	
+		      t->m_masterFdMutex->Unlock();
+		  }
 		  else {
 		      char c;
 		      ::read(t->m_pipeFd[0], &c, 1);
@@ -124,21 +124,21 @@ void *InternetServer::TimerQueueFunction(void *d) {
 
 
 void InternetServer::WantsToReceive(Socket *sock) {
-  pthread_mutex_lock(&m_masterFdMutex);
+  m_masterFdMutex->Lock();
   FD_SET(sock->SockNum(), &m_masterFdList);
-  pthread_mutex_unlock(&m_masterFdMutex);
+  m_masterFdMutex->Unlock();
   ::write(m_pipeFd[1], "r", 1);
 }
 
 
 void InternetServer::KillSession(SessionDriver *driver) {
   m_timerQueue->PurgeSession(driver);
-  pthread_mutex_lock(&m_masterFdMutex);
+  m_masterFdMutex->Lock();
   if (NULL != driver->GetSocket()) {
     FD_CLR(driver->GetSocket()->SockNum(), &m_masterFdList);
     driver->DestroySession();
   }
-  pthread_mutex_unlock(&m_masterFdMutex);
+  m_masterFdMutex->Unlock();
   ::write(m_pipeFd[1], "r", 1);
 }
 

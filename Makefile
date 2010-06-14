@@ -4,7 +4,7 @@ CXXFLAGS=-g -Wall -fPIC
 %.d: %.cpp
 	@set -e; rm -f $@; \
 	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : Makefile ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libcppserver.so.1
@@ -24,26 +24,6 @@ libcppserver.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o de
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)
-
-internetsession.o: Makefile
-
-socket.o: Makefile
-
-internetserver.o: Makefile
-
-deltaqueue.o: Makefile
-
-deltaqueueaction.o: Makefile
-
-sessiondriver.o: Makefile
-
-servermaster.o: Makefile
-
-mutex.o: Makefile
-
-cond.o: Makefile
-
-thread.o: Makefile
 
 clean:
 	rm -f *.o *.d libcppserver.so.1.1

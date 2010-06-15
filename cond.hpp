@@ -1,6 +1,10 @@
 #if !defined(_COND_HPP_INCLUDED_)
 #define _COND_HPP_INCLUDED_
 
+/*
+ * This implements your basic condition variable.
+ */
+
 #include <pthread.h>
 
 #include "mutex.hpp"

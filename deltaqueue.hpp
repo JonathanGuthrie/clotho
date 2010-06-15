@@ -1,6 +1,12 @@
 #if !defined(_DELTAQUEUE_HPP_INCLUDED_)
 #define _DELTAQUEUE_HPP_INCLUDED_
 
+/*
+ * The DeltaQueue class implements a delta queue for the Internet server.
+ *
+ * It is used internally by the sever library
+ */
+
 #include "deltaqueueaction.hpp"
 #include "mutex.hpp"
 

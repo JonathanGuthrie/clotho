@@ -1,6 +1,10 @@
 #if !defined(_INSENSITIVE_HPP_INCLUDED_)
 #define _INSENSITIVE_HPP_INCLUDED_
 
+/*
+ * Implementation of a case-insensitive string
+ */
+
 #include <string>
 
 struct caseInsensitiveTraits : public std::char_traits<char> {

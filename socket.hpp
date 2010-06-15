@@ -1,6 +1,10 @@
 #if !defined(_SOCKET_HPP_INCLUDED_)
 #define _SOCKET_HPP_INCLUDED_
 
+/*
+ * Your basic IP socket impelementation
+ */
+
 #include <stdint.h>
 #include <netinet/in.h>
 

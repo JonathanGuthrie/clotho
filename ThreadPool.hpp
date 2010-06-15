@@ -1,6 +1,17 @@
 #if !defined(THREADPOOL_H_INCLUDED)
 #define THREADPOOL_H_INCLUDED
 
+/*
+ * The template in this file implements a worker thread pool.  The template must be
+ * based on a class that implements a method called DoWork that neither accepts nor
+ * returns anything.  The class that uses the thread pool sends work to them using
+ * the SendMessage and SendMessages methods.
+ *
+ * In the case of the InternetServer, the thread pools are called to notify them that
+ * the socket will not block on receive, and the worker itself is expected to do the
+ * actual receiving.
+ */
+
 #include <queue>
 #include <list>
 

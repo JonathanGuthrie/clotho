@@ -1,6 +1,9 @@
 #if !defined(_THREAD_HPP_INCLUDED_)
 #define _THREAD_HPP_INCLUDED_
 
+/*
+ * Your basic thread implementation
+ */
 #include <pthread.h>
 
 class ThreadException

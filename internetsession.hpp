@@ -1,6 +1,12 @@
 #if !defined(_INTERNETSESSION_HPP_INCLUDED_)
 #define _INTERNETSESSION_HPP_INCLUDED_
 
+/*
+ * A derivative of the InternetSession class is instantiated for each connection from a client.
+ * Basically, the InternetSession subclass holds all of the state for that connection's
+ * operations and the actual protocol implementation is done in derivatives of this class.
+ */
+
 #include <stdint.h>
 #include <stdlib.h>
 

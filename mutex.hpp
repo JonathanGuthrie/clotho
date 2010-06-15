@@ -1,6 +1,10 @@
 #if !defined(_MUTEX_HPP_INCLUDED_)
 #define _MUTEX_HPP_INCLUDED_
 
+/*
+ * This implements your basic mutex variable.
+ */
+
 #include <pthread.h>
 
 class Mutex

@@ -8,7 +8,7 @@ done)  Make the driver visible again
   onto the individual worker queues.  That will allow the most items to finish
   the most quickly
 
-5)  Add a tutorial with an example server.  Maybe an echo server.
+done)  Add a tutorial with an example server.  Maybe an echo server.
 
 6)  Add doxygen header blocks.
 

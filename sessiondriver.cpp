@@ -18,6 +18,7 @@ SessionDriver::~SessionDriver(void) {
   if (NULL != m_session) {
     delete m_session;
   }
+  delete m_workMutex;
 }
 
 

@@ -1,0 +1,4 @@
+in bash:
+valgrind --track-origins=yes --leak-check=full --show-reachable=yes -v ./echod 2> valgrind.out
+
+

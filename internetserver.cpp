@@ -31,6 +31,8 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
 
 
 InternetServer::~InternetServer() {
+  delete m_masterFdMutex;
+  delete m_timerQueue;
 }
 
 

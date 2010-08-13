@@ -24,7 +24,7 @@ class Socket
 private:
     int sock;
     struct sockaddr_in address; 
-    // SYZYGY -- I need a copy constructor because the "connect" function should return a pointer to a Socket instance
+    // I need a copy constructor because the "connect" function returns a pointer to a Socket instance
     Socket(int socket, struct sockaddr_in address);
 
 public:

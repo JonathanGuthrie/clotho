@@ -12,7 +12,6 @@ LDFLAGS=-lpthread -lcrypt -lcppserver
 SOURCES=echod.cpp \
 	echomaster.cpp \
 	echosession.cpp \
-	echorequest.cpp \
 	idletimer.cpp
 
 echod: echod.o echomaster.o echosession.o echorequest.o idletimer.o
@@ -24,8 +23,6 @@ echod.o:  Makefile
 echomaster.o: Makefile
 
 echosession.o: Makefile
-
-echorequest.o: Makefile
 
 idletimer.o: Makefile
 

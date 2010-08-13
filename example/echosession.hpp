@@ -3,14 +3,11 @@
 
 #include <internetsession.hpp>
 
-#include "echorequest.hpp"
-
 class EchoMaster;
 class InternetServer;
 
 class EchoSession :  public InternetSession {
 private:
-  EchoRequest *m_request;
   InternetServer *m_server;
   EchoMaster *m_master;
   time_t m_lastTrafficTime;

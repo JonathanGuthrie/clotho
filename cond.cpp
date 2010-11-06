@@ -11,7 +11,7 @@ Cond::~Cond() {
 }
 
 void Cond::Wait(Mutex *lockedMutex) {
-  pthread_cond_wait(&m_cond, lockedMutex->GetMutex());
+  pthread_cond_wait(&m_cond, lockedMutex->mutex());
 }
 
 void Cond::Signal() {

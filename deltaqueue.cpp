@@ -51,9 +51,9 @@ void DeltaQueue::Tick() {
     while (NULL != temp) {
 	DeltaQueueAction *next = temp->next;
 
-	temp->m_session->GetDriver()->Lock();
+	temp->m_session->driver()->Lock();
 	temp->HandleTimeout(false);
-	temp->m_session->GetDriver()->Unlock();
+	temp->m_session->driver()->Unlock();
 	delete temp;
 	temp = next;
     }
@@ -102,7 +102,7 @@ void DeltaQueue::PurgeSession(const SessionDriver *driver) {
     m_queueMutex.Lock();
     for(temp = m_queueHead; NULL != temp; temp=next) {
 	next = temp->next;
-	if (driver == temp->m_session->GetDriver()) {
+	if (driver == temp->m_session->driver()) {
 	    if (NULL != next) {
 		next->m_delta += temp->m_delta;
 	    }

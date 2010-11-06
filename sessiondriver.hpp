@@ -26,10 +26,10 @@ public:
   void DoWork(void);
   void NewSession(Socket *s);
   void DestroySession(void);
-  const InternetSession *GetSession(void) const { return m_session; }
-  Socket *GetSocket(void) const { return m_sock; }
-  InternetServer *GetServer(void) const { return m_server; }
-  ServerMaster *GetMaster(void) const { return m_master; }
+  const InternetSession *session(void) const { return m_session; }
+  Socket *socket(void) const { return m_sock; }
+  InternetServer *server(void) const { return m_server; }
+  ServerMaster *master(void) const { return m_master; }
   void Lock(void);
   void Unlock(void);
   void WantsToReceive(void);

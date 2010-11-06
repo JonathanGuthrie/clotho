@@ -18,8 +18,8 @@ public:
   InternetSession(ServerMaster *master, SessionDriver *driver);
   virtual void ReceiveData(uint8_t *buffer, size_t size) = 0;
   virtual ~InternetSession();
-  SessionDriver *GetDriver() const { return m_driver; }
-  ServerMaster *GetMaster() const { return m_master; }
+  SessionDriver *driver() const { return m_driver; }
+  ServerMaster *master() const { return m_master; }
 
 protected:
   ServerMaster *m_master;

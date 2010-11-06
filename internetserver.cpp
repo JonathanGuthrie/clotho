@@ -136,8 +136,8 @@ void InternetServer::WantsToReceive(Socket *sock) {
 void InternetServer::KillSession(SessionDriver *driver) {
   m_timerQueue->PurgeSession(driver);
   m_masterFdMutex->Lock();
-  if (NULL != driver->GetSocket()) {
-    FD_CLR(driver->GetSocket()->SockNum(), &m_masterFdList);
+  if (NULL != driver->socket()) {
+    FD_CLR(driver->socket()->SockNum(), &m_masterFdList);
     driver->DestroySession();
   }
   m_masterFdMutex->Unlock();

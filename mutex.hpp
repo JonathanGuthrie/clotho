@@ -17,7 +17,7 @@ public:
   void Unlock(void) { pthread_mutex_unlock(&m_mutex); }
   Mutex();
   ~Mutex();
-  pthread_mutex_t *GetMutex() { return &m_mutex; }
+  pthread_mutex_t *mutex() { return &m_mutex; }
 };
 
 #endif // _MUTEX_HPP_INCLUDED_

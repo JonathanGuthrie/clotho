@@ -7,7 +7,7 @@ CXXFLAGS=-g -Wall -fPIC
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : Makefile ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libcppserver.so.1
+LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libclotho.so.1
 
 SOURCES=internetsession.cpp \
 	socket.cpp \
@@ -20,11 +20,11 @@ SOURCES=internetsession.cpp \
 	cond.cpp \
 	thread.cpp
 
-libcppserver.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o thread.o
+libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o thread.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)
 
 clean:
-	rm -f *.o *.d libcppserver.so.1.1
+	rm -f *.o *.d libclotho.so.1.1
 

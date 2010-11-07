@@ -1,1 +1,5 @@
 Rename this project to clotho
+
+Along with the library file, these header files are part of the deliverable:
+deltaqueueaction.hpp  internetserver.hpp   servermaster.hpp
+insensitive.hpp       internetsession.hpp  sessiondriver.hpp

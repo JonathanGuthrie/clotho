@@ -132,6 +132,7 @@ void ThreadPool<T>::WorkerThread(void) {
     m_pendingQueueMutex.Lock();
 
     if (m_stopRunning) {
+      m_pendingQueueMutex.Unlock();
       break;
     }
 
@@ -179,9 +180,14 @@ ThreadPool<T>::~ThreadPool(void) {
   
   m_stopRunning = true;
   m_pendingQueueMutex.Unlock();
+  m_workersGo.Broadcast();
 
-  // SYZYGY -- I need to wait for each thread because otherwise I don't know when I can clean up
-  // delete[] m_workerThreads;
+  // I need to wait for each thread because otherwise I don't know when I can clean up
+  // Fortunately, the thread destructor does that.
+  for (int i=0; i<m_workerThreadCount; ++i) {
+    delete m_workerThreads[i];
+  }
+  delete[] m_workerThreads;
 }
 
 

@@ -17,3 +17,7 @@ void Cond::Wait(Mutex *lockedMutex) {
 void Cond::Signal() {
   pthread_cond_signal(&m_cond);
 }
+
+void Cond::Broadcast() {
+  pthread_cond_broadcast(&m_cond);
+}

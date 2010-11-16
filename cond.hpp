@@ -17,6 +17,7 @@ private:
 public:
   void Wait(Mutex *lockedMutex);
   void Signal();
+  void Broadcast();
   Cond();
   ~Cond();
 };

@@ -4,15 +4,22 @@ done)  Get rid of the requirement that the InternetSession derivative classes kn
 
 done)  Make the driver visible again
 
-4)  ThreadPool.hpp should pull items off a single queue rather than push items
+done)  ThreadPool.hpp should pull items off a single queue rather than push items
   onto the individual worker queues.  That will allow the most items to finish
   the most quickly
 
 done)  Add a tutorial with an example server.  Maybe an echo server.
 
-6)  Add doxygen header blocks.
+6)  Use epoll instead of select
 
-7)  Deal with the case where the socket might block on transmit
+done)  Rename the "Getter" methods to not include an explicit "get"
 
-8)  Use epoll instead of select
+8)  Put the high water marks back in ThreadPool.hpp
+
+9)  Push to GitHub
+
+10)  Add doxygen header blocks.
+
+11)  Deal with the case where the socket might block on transmit
+
 

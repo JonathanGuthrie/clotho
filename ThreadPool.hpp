@@ -12,8 +12,80 @@
  * actual receiving.
  */
 
+/*
+ * Notes on a single-input-queue redesign.
+ *
+ * For a while, now, I've been intended to do a redesign to use a single input queue for all
+ * of the worker threads.  The idea is that this would result in the fairest work distribution
+ * in the likely case of poorly-behaved worker thread code.
+ *
+ * Among the assumptions that underlie this implementation is the assumption that we don't
+ * need to be "fair" in the distribution of work.  That is, it doesn't matter if the first
+ * thread does all the work and none of the other threads do any, it only matters that the
+ * work gets done in as efficient a manner as possible.
+ *
+ * The selection of which worker thread gets the next task must be done as efficiently as
+ * possible.  So, I'm going to build a queue of inactive worker threads and a
+ * collection of all worker threads and use the queue to manage them.
+ *
+ * So, how does a worker thread know that there is work to be done?  Well, when a thread is
+ * created it should check the list of pending work and take the next one if there is one
+ * available.  When the worker thread finishes a task, it should also check to see if any
+ * work needs to be done.  Also, when tasks are added to the list of pending tasks, it should
+ * wake up tasks as needed to assign available threads to pending tasks.
+ *
+ * Thinking about it, I need to go through the tasks in detail to make sure that things happen
+ * when they're supposed to.  For an idle system, that is a system with at least one entry in
+ * the idle queue, the sequence of tasks is this:
+ *
+ * 1)  Lock the idle queue
+ * 2)  Pop the value off the idle queue
+ * 3)  Set the appropriate task pointer to the task to run
+ * 4)  Signal the now non-idle to go
+ * 5)  Unlock the idle queue
+ *
+ * If the system is not idle, then we need to be careful how we do things.  What we want to avoid
+ * is something like this:
+ *
+ * 1) Master thread locks the idle queue
+ * 2) Worker thread finishes, locks the pending queue
+ * 3) Worker thread sees empty pending queue
+ * 4) Worker thread attempts to lock idle queue (blocks because lock is held by the master thread)
+ * 5) Master thread sees idle queue empty
+ * 6) master thread locks pending queue -- DEADLOCK (master waiting for pending, worker waiting for idle)
+ *
+ * Or this
+ * 
+ * 1) Master thread locks the idle queue
+ * 2) Master thread sees idle queue empty
+ * 3) Master thread unlocks idle queue
+ * 4) Worker thread finishes, locks the pending queue
+ * 5) Worker thread sees empty pending queue
+ * 6) Worker thread locks idle queue
+ * 7) Worker thread adds self to idle queue
+ * 8) Worker thread unlocks idle queue
+ * 9) master thread locks pending queue
+ * 10) master thread adds task to pending queue
+ * 11) master thread unlocks pending queue
+ *
+ * In this case, the master doesn't know the worker became idle and the worker doesn't know that work has
+ * become available, so nothing proceeds until some worker thread finishes a task and notices the nonempty
+ * pending queue.
+ *
+ * So, What I should do is this:  I need to lock the pending queue and the idle queue in the same order in
+ * both threads.  I don't have to lock both of them, but I need to call one the first one to lock and one
+ * the second one to lock and I need to never lock the second one unless I lock the first one, well, first.
+ *
+ * So, which one is first?  Well, I want to arrange it so that, if possible, I only lock one in the normal
+ * case or, failing that, I only lock one under load.  The problem with viewing it that way is that the worker
+ * threads are mostly interested in pending and the master thread is mostly interested in idle.  Since they
+ * are going to be locked every time, I think that it doesn't matter which one I pick.  Therefore, I pick 
+ * pending, then idle.
+ */
+
 #include <queue>
 #include <list>
+#include <iostream>
 
 #include "mutex.hpp"
 #include "cond.hpp"
@@ -24,192 +96,140 @@ template <typename T>
 class ThreadPool
 {
 public:
-    typedef typename std::list<T> Tlist;
-    typedef typename std::queue<T, Tlist> Tqueue;
-    typedef struct WorkerThreadInfo
-    {
-	ThreadPool *m_Instance;
-	int m_QueueToUse;
-    } WorkerThreadInfo;
-    ThreadPool(int numThreads = 1, typename Tqueue::size_type queue_highwater = 0);
-    ~ThreadPool(void);
-    void SendMessage(T message);
-    void SendMessages(Tqueue &messages);
-    void SendMessages(Tlist &messages);
-    void WorkerThread(int queue_number);
-    static void *ThreadFunction(void*);
+  typedef typename std::list<T> Tlist;
+  typedef typename std::queue<T, Tlist> Tqueue;
+  typedef std::queue<int> IntQueue;
+  ThreadPool(int numThreads = 1);
+  ~ThreadPool(void);
+  void SendMessage(T message);
+  void SendMessages(Tqueue &messages);
+  void SendMessages(Tlist &messages);
 
 private:
-    Tqueue *m_TheQueues;
-    unsigned long m_QueueHighwater;
-    Mutex *m_QueueMutex;
-    Cond *m_QueueEmpty;
-    Cond *m_QueueFull;
-    int m_WorkerThreadCount;
-    int m_NextWorkerThread;
-    Mutex m_NextMutex;
-    Thread **m_WorkerThreads;
-    WorkerThreadInfo *m_WorkerThreadParams;
-    bool m_StopRunning;
+  void WorkerThread(void);
+  static void *ThreadFunction(void*);
+
+  Cond m_workersGo;
+  bool m_stopRunning;
+  int m_workerThreadCount;
+  Mutex m_pendingQueueMutex;
+  Tqueue m_pendingQueue;
+  Thread **m_workerThreads;
 };
 
 template <typename T>
-void *ThreadPool<T>::ThreadFunction(void *instance_pointer)
-{
-    typename ThreadPool<T>::WorkerThreadInfo *info = (typename ThreadPool<T>::WorkerThreadInfo *)instance_pointer;
-    info->m_Instance->WorkerThread(info->m_QueueToUse);
-    return NULL;
+void *ThreadPool<T>::ThreadFunction(void *instance_pointer) {
+  ThreadPool<T> *self = (ThreadPool<T> *)instance_pointer;
+  self->WorkerThread();
+  return NULL;
 }
 
 
 template <typename T>
-ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_type queue_highwater)
-{
-    m_QueueHighwater = queue_highwater;
-    m_WorkerThreadCount = numThreads;
-    m_NextWorkerThread = 0;
-    m_StopRunning = false;
+void ThreadPool<T>::WorkerThread(void) {
+  // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
+  while(1) {
+    m_pendingQueueMutex.Lock();
 
-    m_TheQueues = new typename ThreadPool<T>::Tqueue[m_WorkerThreadCount];
-
-    m_QueueMutex = new Mutex[m_WorkerThreadCount]();
-    m_QueueEmpty = new Cond[m_WorkerThreadCount]();
-    m_QueueFull = new Cond[m_WorkerThreadCount]();
-
-    m_WorkerThreads = new Thread*[m_WorkerThreadCount];
-    m_WorkerThreadParams = new WorkerThreadInfo[m_WorkerThreadCount];
-    for (int i=0; i<m_WorkerThreadCount; ++i)
-    {
-	m_WorkerThreadParams[i].m_Instance = this;
-	m_WorkerThreadParams[i].m_QueueToUse = i;
-	m_WorkerThreads[i] = new Thread(ThreadFunction, &m_WorkerThreadParams[i]);
+    if (m_stopRunning) {
+      break;
     }
+
+    T work = NULL;
+    if (!m_pendingQueue.empty()) {
+      work = m_pendingQueue.front();
+      m_pendingQueue.pop();
+      m_pendingQueueMutex.Unlock();
+    }
+    else {
+      work = NULL;
+      // The wait unlocks m_pendingQueueMutex, and then locks it again when the condition happens
+      m_workersGo.Wait(&m_pendingQueueMutex);
+      if (!m_pendingQueue.empty()) {
+	work = m_pendingQueue.front();
+	m_pendingQueue.pop();
+      }
+      m_pendingQueueMutex.Unlock();
+    }
+    if (NULL != work) {
+      work->DoWork();
+    }
+  }
 }
+
 
 template <typename T>
-ThreadPool<T>::~ThreadPool(void)
-{
-    m_StopRunning = true;
-    for (int i=0; i<m_WorkerThreadCount; ++i)
-    {
-        m_QueueFull[i].Signal();
-	delete m_WorkerThreads[i];
-    }
+ThreadPool<T>::ThreadPool(int numThreads) {
+  m_workerThreadCount = numThreads;
+  m_stopRunning = false;
 
-    delete[] m_WorkerThreadParams;
-    delete[] m_WorkerThreads;
-    delete[] m_QueueFull;
-    delete[] m_QueueEmpty;
-    delete[] m_QueueMutex;
-    delete[] m_TheQueues;
+  m_workerThreads = new Thread*[m_workerThreadCount];
+
+  m_pendingQueueMutex.Lock();
+  for (int i=0; i<m_workerThreadCount; ++i) {
+    m_workerThreads[i] = new Thread(ThreadFunction, this);
+  }
+  m_pendingQueueMutex.Unlock();
 }
+
+
+template <typename T>
+ThreadPool<T>::~ThreadPool(void) {
+  m_pendingQueueMutex.Lock();
+  
+  m_stopRunning = true;
+  m_pendingQueueMutex.Unlock();
+
+  // SYZYGY -- I need to wait for each thread because otherwise I don't know when I can clean up
+  // delete[] m_workerThreads;
+}
+
 
 /*
- * This takes a single session and passes it to the destination.  If the queue is full (that is, queue_highwater
- * is nonzero and there are at least queue_highwater elements in the queue) then this will block until 
- * the queue is emptied by a call to receive messages, and then the element is added.
+ * This takes a single session and does the right thing with it.  If there is an idle session, then
+ * give it to that session and signal the condition variable.  If there are no idle sessions, then
+ * put this at the back of the message queue and go about our way.
  */
 template <typename T>
 void ThreadPool<T>::SendMessage(T message)
 {
-    m_NextMutex.Lock();
-    m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
-    int worker = m_NextWorkerThread;
-    m_NextMutex.Unlock();
-
-    // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    m_QueueMutex[worker].Lock();
-    while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size()))
-    {
-      m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
-    }
-    m_TheQueues[worker].push(message);
-    m_QueueMutex[worker].Unlock();
-    m_QueueFull[worker].Signal();
+  m_pendingQueueMutex.Lock();
+  m_pendingQueue.push(message);
+  m_pendingQueueMutex.Unlock();
+  m_workersGo.Signal();
 }
 
 /*
- * This takes queue of sessions and passes them to the destination.  If the queue is full (that is, queue_highwater
- * is nonzero and there are at least queue_highwater elements in the queue) then this will block until 
- * the queue is emptied by a call to receive messages, and then the elements are added.
+ * This takes queue of sessions and passes them to the destination.  If there fewer idle threads than
+ * messages, it will allocate work to all the threads that it can and then put the rest on the pending
+ * queue, otherwise it will allocate all the messages and put nothing on to the idle queue
  */
 template <typename T>
-void ThreadPool<T>::SendMessages(Tqueue &messages)
-{
-    m_NextMutex.Lock();
-    m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
-    int worker = m_NextWorkerThread;
-    m_NextMutex.Unlock();
-
-    // SYZYGY -- the messages should be distributed across multiple queues
-    // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    m_QueueMutex[worker].Lock();
-    while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size())) {
-        m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
-    }
-    while(!messages.empty())
-    {
-	m_TheQueues[worker].push(messages.front());
-	messages.pop();
-    }
-    m_QueueMutex[worker].Unlock();
-    m_QueueFull[worker].Signal();
+void ThreadPool<T>::SendMessages(Tqueue &messages) {
+  m_pendingQueueMutex.Lock();
+  while (!messages.empty()) {
+    m_pendingQueue.push(messages.front());
+    messages.pop();
+  }
+  m_pendingQueueMutex.Unlock();
+  m_workersGo.Broadcast();
 }
 
 /*
- * This takes a list of sessions and passes them to the destination.  If the queue is full (that is, queue_highwater
- * is nonzero and there are at least queue_highwater elements in the queue) then this will block until 
- * the queue is emptied by a call to receive messages, and then the elements are added.
+ * This takes list of sessions and passes them to the destination.  If there fewer idle threads than
+ * messages, it will allocate work to all the threads that it can and then put the rest on the pending
+ * queue, otherwise it will allocate all the messages and put nothing on to the idle queue
  */
 template <typename T>
-void ThreadPool<T>::SendMessages(Tlist &messages)
-{
-    m_NextMutex.Lock();
-    m_NextWorkerThread = (m_NextWorkerThread + 1) % m_WorkerThreadCount;
-    int worker = m_NextWorkerThread;
-    m_NextMutex.Unlock();
-
-    // SYZYGY -- the messages should be distributed across multiple queues
-    // SYZYGY -- if a queue is too full, it should try the next until all of them have been tried
-    m_QueueMutex[worker].Lock();
-    while ((0 != m_QueueHighwater) && (m_QueueHighwater < m_TheQueues[worker].size()))
-    {
-        m_QueueEmpty[worker].Wait(&m_QueueMutex[worker]);
-    }
-    for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
-	m_TheQueues[worker].push(*i);
-    }
-    m_QueueMutex[worker].Unlock();
-    m_QueueFull[worker].Signal();
+void ThreadPool<T>::SendMessages(Tlist &messages) {
+  m_pendingQueueMutex.Lock();
+  
+  for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
+    m_pendingQueue.push(*i);
+  }
+  m_pendingQueueMutex.Unlock();
+  m_workersGo.Broadcast();
 }
 
-template <typename T>
-void ThreadPool<T>::WorkerThread(int queue_number)
-{
-    // std::cout << "In the worker thread method, I've got a listener for queue " << queue_number << std::endl;
-    while(1)
-    {
-        m_QueueMutex[queue_number].Lock();
-	while(m_TheQueues[queue_number].empty())
-	{
-	    m_QueueFull[queue_number].Wait(&m_QueueMutex[queue_number]);
-	    if (m_StopRunning)
-	    {
-		break;
-	    }
-	}
-	if (m_StopRunning)
-	{
-	    break;
-	}
-	while(!m_TheQueues[queue_number].empty())
-	{
-	    m_TheQueues[queue_number].front()->DoWork();
-	    m_TheQueues[queue_number].pop();
-	}
-	m_QueueMutex[queue_number].Unlock();
-	m_QueueEmpty[queue_number].Signal();
-    }
-}
 
 #endif // THREADPOOL_H_INCLUDED

@@ -10,82 +10,16 @@
  * In the case of the InternetServer, the thread pools are called to notify them that
  * the socket will not block on receive, and the worker itself is expected to do the
  * actual receiving.
- */
-
-/*
- * Notes on a single-input-queue redesign.
- *
- * For a while, now, I've been intended to do a redesign to use a single input queue for all
- * of the worker threads.  The idea is that this would result in the fairest work distribution
- * in the likely case of poorly-behaved worker thread code.
  *
  * Among the assumptions that underlie this implementation is the assumption that we don't
  * need to be "fair" in the distribution of work.  That is, it doesn't matter if the first
  * thread does all the work and none of the other threads do any, it only matters that the
  * work gets done in as efficient a manner as possible.
  *
- * The selection of which worker thread gets the next task must be done as efficiently as
- * possible.  So, I'm going to build a queue of inactive worker threads and a
- * collection of all worker threads and use the queue to manage them.
- *
- * So, how does a worker thread know that there is work to be done?  Well, when a thread is
- * created it should check the list of pending work and take the next one if there is one
- * available.  When the worker thread finishes a task, it should also check to see if any
- * work needs to be done.  Also, when tasks are added to the list of pending tasks, it should
- * wake up tasks as needed to assign available threads to pending tasks.
- *
- * Thinking about it, I need to go through the tasks in detail to make sure that things happen
- * when they're supposed to.  For an idle system, that is a system with at least one entry in
- * the idle queue, the sequence of tasks is this:
- *
- * 1)  Lock the idle queue
- * 2)  Pop the value off the idle queue
- * 3)  Set the appropriate task pointer to the task to run
- * 4)  Signal the now non-idle to go
- * 5)  Unlock the idle queue
- *
- * If the system is not idle, then we need to be careful how we do things.  What we want to avoid
- * is something like this:
- *
- * 1) Master thread locks the idle queue
- * 2) Worker thread finishes, locks the pending queue
- * 3) Worker thread sees empty pending queue
- * 4) Worker thread attempts to lock idle queue (blocks because lock is held by the master thread)
- * 5) Master thread sees idle queue empty
- * 6) master thread locks pending queue -- DEADLOCK (master waiting for pending, worker waiting for idle)
- *
- * Or this
- * 
- * 1) Master thread locks the idle queue
- * 2) Master thread sees idle queue empty
- * 3) Master thread unlocks idle queue
- * 4) Worker thread finishes, locks the pending queue
- * 5) Worker thread sees empty pending queue
- * 6) Worker thread locks idle queue
- * 7) Worker thread adds self to idle queue
- * 8) Worker thread unlocks idle queue
- * 9) master thread locks pending queue
- * 10) master thread adds task to pending queue
- * 11) master thread unlocks pending queue
- *
- * In this case, the master doesn't know the worker became idle and the worker doesn't know that work has
- * become available, so nothing proceeds until some worker thread finishes a task and notices the nonempty
- * pending queue.
- *
- * So, What I should do is this:  I need to lock the pending queue and the idle queue in the same order in
- * both threads.  I don't have to lock both of them, but I need to call one the first one to lock and one
- * the second one to lock and I need to never lock the second one unless I lock the first one, well, first.
- *
- * So, which one is first?  Well, I want to arrange it so that, if possible, I only lock one in the normal
- * case or, failing that, I only lock one under load.  The problem with viewing it that way is that the worker
- * threads are mostly interested in pending and the master thread is mostly interested in idle.  Since they
- * are going to be locked every time, I think that it doesn't matter which one I pick.  Therefore, I pick 
- * pending, then idle.
  */
 
 #include <queue>
 #include <list>
-#include <iostream>
 
 #include "mutex.hpp"
 #include "cond.hpp"
@@ -99,7 +33,7 @@ public:
   typedef typename std::list<T> Tlist;
   typedef typename std::queue<T, Tlist> Tqueue;
   typedef std::queue<int> IntQueue;
-  ThreadPool(int numThreads = 1);
+  ThreadPool(int numThreads = 1, typename Tqueue::size_type queue_highwater = 0);
   ~ThreadPool(void);
   void SendMessage(T message);
   void SendMessages(Tqueue &messages);
@@ -114,7 +48,10 @@ private:
   int m_workerThreadCount;
   Mutex m_pendingQueueMutex;
   Tqueue m_pendingQueue;
+  Mutex m_highwaterMutex;
+  Cond m_highwaterCond;
   Thread **m_workerThreads;
+  const typename ThreadPool<T>::Tqueue::size_type m_queueHighwater;
 };
 
 template <typename T>
@@ -130,6 +67,9 @@ void ThreadPool<T>::WorkerThread(void) {
   // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
   while(1) {
     m_pendingQueueMutex.Lock();
+    if ((0 < m_queueHighwater) && (m_queueHighwater > m_pendingQueue.size())) {
+      m_highwaterCond.Broadcast();
+    }
 
     if (m_stopRunning) {
       m_pendingQueueMutex.Unlock();
@@ -160,7 +100,7 @@ void ThreadPool<T>::WorkerThread(void) {
 
 
 template <typename T>
-ThreadPool<T>::ThreadPool(int numThreads) {
+ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_type queue_highwater) : m_queueHighwater(queue_highwater) {
   m_workerThreadCount = numThreads;
   m_stopRunning = false;
 
@@ -181,6 +121,7 @@ ThreadPool<T>::~ThreadPool(void) {
   m_stopRunning = true;
   m_pendingQueueMutex.Unlock();
   m_workersGo.Broadcast();
+  m_highwaterCond.Broadcast();
 
   // I need to wait for each thread because otherwise I don't know when I can clean up
   // Fortunately, the thread destructor does that.
@@ -199,10 +140,18 @@ ThreadPool<T>::~ThreadPool(void) {
 template <typename T>
 void ThreadPool<T>::SendMessage(T message)
 {
+  typename ThreadPool<T>::Tqueue::size_type depth;
+  
   m_pendingQueueMutex.Lock();
   m_pendingQueue.push(message);
+  depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
   m_workersGo.Signal();
+  if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
+    m_highwaterMutex.Lock();
+    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterMutex.Unlock();
+  }
 }
 
 /*
@@ -212,13 +161,21 @@ void ThreadPool<T>::SendMessage(T message)
  */
 template <typename T>
 void ThreadPool<T>::SendMessages(Tqueue &messages) {
+  typename ThreadPool<T>::Tqueue::size_type depth;
+
   m_pendingQueueMutex.Lock();
   while (!messages.empty()) {
     m_pendingQueue.push(messages.front());
     messages.pop();
   }
+  depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
   m_workersGo.Broadcast();
+  if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
+    m_highwaterMutex.Lock();
+    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterMutex.Unlock();
+  }
 }
 
 /*
@@ -228,13 +185,20 @@ void ThreadPool<T>::SendMessages(Tqueue &messages) {
  */
 template <typename T>
 void ThreadPool<T>::SendMessages(Tlist &messages) {
+  typename ThreadPool<T>::Tqueue::size_type depth;
   m_pendingQueueMutex.Lock();
   
   for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
     m_pendingQueue.push(*i);
   }
+  depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
   m_workersGo.Broadcast();
+  if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
+    m_highwaterMutex.Lock();
+    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterMutex.Unlock();
+  }
 }
 
 

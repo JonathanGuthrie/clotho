@@ -14,7 +14,7 @@ done)  Add a tutorial with an example server.  Maybe an echo server.
 
 done)  Rename the "Getter" methods to not include an explicit "get"
 
-8)  Put the high water marks back in ThreadPool.hpp
+done)  Put the high water marks back in ThreadPool.hpp
 
 9)  Push to GitHub
 

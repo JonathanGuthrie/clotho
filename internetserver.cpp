@@ -22,6 +22,7 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
 
 
 InternetServer::~InternetServer() {
+  Shutdown();
   delete m_timerQueue;
 }
 
@@ -38,19 +39,21 @@ void InternetServer::Run() {
 
 
 void InternetServer::Shutdown() {
-  m_isRunning = false;
-  pthread_cancel(m_listenerThread);
-  pthread_join(m_listenerThread, NULL);
-  delete m_listener;
-  m_listener = NULL;
-  close(m_epollFd);
-  pthread_join(m_receiverThread, NULL);
-  pthread_join(m_timerQueueThread, NULL);
+  if (m_isRunning) {
+    m_isRunning = false;
+    pthread_cancel(m_listenerThread);
+    pthread_join(m_listenerThread, NULL);
+    delete m_listener;
+    m_listener = NULL;
+    close(m_epollFd);
+    pthread_join(m_receiverThread, NULL);
+    pthread_join(m_timerQueueThread, NULL);
 
-  for (std::set<SessionDriver *>::iterator i=m_sessions.begin(); i!=m_sessions.end(); ++i) {
+    for (std::set<SessionDriver *>::iterator i=m_sessions.begin(); i!=m_sessions.end(); ++i) {
       KillSession(*i);
+    }
+    delete m_pool;
   }
-  delete m_pool;
 }
 
 
@@ -109,9 +112,10 @@ void InternetServer::KillSession(SessionDriver *driver) {
   m_timerQueue->PurgeSession(driver);
   if (NULL != driver->socket()) {
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
-    driver->DestroySession();
   }
+  driver->DestroySession();
   m_sessions.erase(driver);
+  delete driver;
 }
 
 

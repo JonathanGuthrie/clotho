@@ -13,15 +13,15 @@ IdleTimer::IdleTimer(int delta, InternetSession *session) : DeltaQueueAction(del
 void IdleTimer::HandleTimeout(bool isPurge) {
     if (!isPurge) {
         EchoSession *session = dynamic_cast<EchoSession *>(m_session);
-        const EchoMaster *master = dynamic_cast<const EchoMaster *>(session->GetMaster());
+        const EchoMaster *master = dynamic_cast<const EchoMaster *>(session->master());
 	time_t now = time(NULL);
-	unsigned timeout = master->GetIdleTimeout();
+	unsigned timeout = master->IdleTimeout();
 
-	if ((now - timeout) > session->GetLastTrafficTime()) {
+	if ((now - timeout) > session->LastTrafficTime()) {
 	    session->IdleTimeout();
 	}
 	else {
-	    session->GetServer()->AddTimerAction(new IdleTimer((time_t) session->GetLastTrafficTime() + timeout + 1 - now, m_session));
+	    session->server()->AddTimerAction(new IdleTimer((time_t) session->LastTrafficTime() + timeout + 1 - now, m_session));
 	}
     }
 }

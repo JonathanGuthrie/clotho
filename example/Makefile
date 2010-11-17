@@ -7,14 +7,14 @@ CXXFLAGS=-g -Wall -I..
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lpthread -lcrypt -lcppserver
+LDFLAGS=-lpthread -lcrypt -lclotho
 
 SOURCES=echod.cpp \
 	echomaster.cpp \
 	echosession.cpp \
 	idletimer.cpp
 
-echod: echod.o echomaster.o echosession.o echorequest.o idletimer.o
+echod: echod.o echomaster.o echosession.o idletimer.o
 
 include $(SOURCES:.cpp=.d)
 

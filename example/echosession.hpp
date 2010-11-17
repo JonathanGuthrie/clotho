@@ -16,8 +16,8 @@ public:
   EchoSession(EchoMaster *master, SessionDriver *driver);
   virtual ~EchoSession();
   virtual void ReceiveData(uint8_t *buffer, size_t length);
-  time_t GetLastTrafficTime(void) const { return m_lastTrafficTime; }
-  InternetServer *GetServer(void) const { return m_server; }
+  time_t LastTrafficTime(void) const { return m_lastTrafficTime; }
+  InternetServer *server(void) const { return m_server; }
   void IdleTimeout(void);
   
 };

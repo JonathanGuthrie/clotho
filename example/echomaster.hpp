@@ -10,7 +10,7 @@ public:
   EchoMaster(int idle_timeout);
   virtual ~EchoMaster(void);
   virtual InternetSession *NewSession(SessionDriver *driver, InternetServer *server);
-  int GetIdleTimeout(void) const { return m_idleTimeout; }
+  int IdleTimeout(void) const { return m_idleTimeout; }
 
 private:
   const int m_idleTimeout;

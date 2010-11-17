@@ -12,9 +12,9 @@
 
 EchoSession::EchoSession(EchoMaster *master, SessionDriver *driver) : InternetSession(master, driver) {
   m_master = master;
-  m_server = driver->GetServer();
+  m_server = driver->server();
   m_driver->WantsToReceive();
-  m_server->AddTimerAction(new IdleTimer(m_master->GetIdleTimeout(), this));
+  m_server->AddTimerAction(new IdleTimer(m_master->IdleTimeout(), this));
   m_lastTrafficTime = time(NULL);
 }
 
@@ -37,7 +37,7 @@ void EchoSession::ReceiveData(uint8_t *buffer, size_t length) {
   // request.
   m_driver->WantsToSend(buffer, length);
   if (0 == strncmp((const char *)buffer, "quit\r\n", length)) {
-    m_driver->GetServer()->KillSession(m_driver);
+    m_driver->server()->KillSession(m_driver);
   }
   else {
     m_lastTrafficTime = time(NULL);
@@ -47,5 +47,5 @@ void EchoSession::ReceiveData(uint8_t *buffer, size_t length) {
 
 void EchoSession::IdleTimeout(void) {
   m_driver->WantsToSend("It's been too long.  Bye\r\n");
-  m_driver->GetServer()->KillSession(m_driver);
+  m_driver->server()->KillSession(m_driver);
 }

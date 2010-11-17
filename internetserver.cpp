@@ -1,6 +1,6 @@
-#include <iostream>
 #include <time.h>
 #include <errno.h>
+#include <sys/epoll.h>
 
 #include "internetserver.hpp"
 #include "sessiondriver.hpp"
@@ -12,26 +12,21 @@
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
 InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
-  if (0 > pipe(m_pipeFd)) {
-    throw ServerErrorException(errno);
-  }
   m_timerQueue = new DeltaQueue;
   m_workerCount = num_workers;
   m_master = master;
   m_isRunning = true;
   m_listener = new Socket(bind_address, bind_port);
+  // SYZYGY -- Need to do something different with the m_sessions
   for (int i=0; i<FD_SETSIZE; ++i) {
     m_sessions[i] = new SessionDriver(this, m_master);
     // new SessionDriver(this, m_pipeFd[1], master);
   }
-  FD_ZERO(&m_masterFdList);
-  FD_SET(m_pipeFd[0], &m_masterFdList);
-  m_masterFdMutex = new Mutex();
+  m_epollFd = epoll_create1(EPOLL_CLOEXEC);
 }
 
 
 InternetServer::~InternetServer() {
-  delete m_masterFdMutex;
   delete m_timerQueue;
 }
 
@@ -53,7 +48,7 @@ void InternetServer::Shutdown() {
   pthread_join(m_listenerThread, NULL);
   delete m_listener;
   m_listener = NULL;
-  ::write(m_pipeFd[1], "q", 1);
+  close(m_epollFd);
   pthread_join(m_receiverThread, NULL);
   pthread_join(m_timerQueueThread, NULL);
 
@@ -68,14 +63,20 @@ void InternetServer::Shutdown() {
 void *InternetServer::ListenerThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
-      Socket *worker = t->m_listener->Accept();
-      if (FD_SETSIZE > worker->SockNum()) {
-	  t->m_sessions[worker->SockNum()]->NewSession(worker);
-	}
-      else {
-	  delete worker;
-	}
+    Socket *worker = t->m_listener->Accept();
+    // SYZYGY -- Need to do something different with the m_sessions
+    if (FD_SETSIZE > worker->SockNum()) {
+      struct epoll_event event;
+      event.events = 0;
+      event.data.ptr = NULL;
+      errno = 0;
+      epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->SockNum(), &event);
+      t->m_sessions[worker->SockNum()]->NewSession(worker);
     }
+    else {
+      delete worker;
+    }
+  }
   return NULL;
 }
 
@@ -83,33 +84,13 @@ void *InternetServer::ListenerThreadFunction(void *d) {
 void *InternetServer::ReceiverThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
-      int maxFd;
-      fd_set localFdList;
-      t->m_masterFdMutex->Lock();
-      localFdList = t->m_masterFdList;
-      t->m_masterFdMutex->Unlock();
-      for (int i=t->m_pipeFd[0]; i<FD_SETSIZE; ++i) {
-	  if (FD_ISSET(i, &localFdList)) {
-	      maxFd = i+1;
-	    }
-	}
-      if (0 < select(maxFd, &localFdList, NULL, NULL, NULL)) {
-	  for (int i=0; i<FD_SETSIZE; ++i) {
-	      if (FD_ISSET(i, &localFdList)) {
-		  if (i != t->m_pipeFd[0]) {
-		      t->m_pool->SendMessage(t->m_sessions[i]);
-		      t->m_masterFdMutex->Lock();
-		      FD_CLR(i, &t->m_masterFdList);
-		      t->m_masterFdMutex->Unlock();
-		  }
-		  else {
-		      char c;
-		      ::read(t->m_pipeFd[0], &c, 1);
-		    }
-		}
-	    }
-	}
+    struct epoll_event events[100];
+
+    int count = epoll_wait(t->m_epollFd, events, 100, 1000);
+    for (int i=0; i<count; ++i) {
+      t->m_pool->SendMessage((SessionDriver *)events[i].data.ptr);
     }
+  }
   return NULL;
 }
 
@@ -125,23 +106,22 @@ void *InternetServer::TimerQueueFunction(void *d) {
 }
 
 
-void InternetServer::WantsToReceive(Socket *sock) {
-  m_masterFdMutex->Lock();
-  FD_SET(sock->SockNum(), &m_masterFdList);
-  m_masterFdMutex->Unlock();
-  ::write(m_pipeFd[1], "r", 1);
+void InternetServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
+  // SYZYGY -- This assumes the session table is indexed by socket number
+  struct epoll_event event;
+  event.events = EPOLLIN | EPOLLONESHOT;
+  event.data.ptr = driver;
+  errno = 0;
+  epoll_ctl(m_epollFd, EPOLL_CTL_MOD, sock->SockNum(), &event);
 }
 
 
 void InternetServer::KillSession(SessionDriver *driver) {
   m_timerQueue->PurgeSession(driver);
-  m_masterFdMutex->Lock();
   if (NULL != driver->socket()) {
-    FD_CLR(driver->socket()->SockNum(), &m_masterFdList);
+    epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
     driver->DestroySession();
   }
-  m_masterFdMutex->Unlock();
-  ::write(m_pipeFd[1], "r", 1);
 }
 
 

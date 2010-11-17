@@ -10,16 +10,18 @@ done)  ThreadPool.hpp should pull items off a single queue rather than push item
 
 done)  Add a tutorial with an example server.  Maybe an echo server.
 
-6)  Use epoll instead of select
+done)  Use epoll instead of select
 
 done)  Rename the "Getter" methods to not include an explicit "get"
 
 done)  Put the high water marks back in ThreadPool.hpp
 
-9)  Push to GitHub
+9)  Eliminate the static array of sessions that worked for select, but isn't appropriate for epoll
 
-10)  Add doxygen header blocks.
+10)  Push to GitHub
 
-11)  Deal with the case where the socket might block on transmit
+11)  Add doxygen header blocks.
+
+12)  Deal with the case where the socket might block on transmit
 
 

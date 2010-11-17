@@ -32,6 +32,7 @@ class ServerMaster;
 class DeltaQueue;
 class Socket;
 class Mutex;
+class InternetSession;
 
 template <typename T>class ThreadPool;
 typedef ThreadPool<SessionDriver *> WorkerPool;
@@ -51,7 +52,7 @@ public:
   void Run();
   void Shutdown();
   void AddTimerAction(DeltaQueueAction *action);
-  void WantsToReceive(Socket *sock);
+  void WantsToReceive(const Socket *sock, SessionDriver *driver);
   void KillSession(SessionDriver *driver);
 
 private:
@@ -64,10 +65,9 @@ private:
     
   WorkerPool *m_pool;
   pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;
+  // SYZYGY -- Need to do something different with the m_sessions
   SessionDriver *m_sessions[FD_SETSIZE];
-  fd_set m_masterFdList;
-  Mutex *m_masterFdMutex;
-  int m_pipeFd[2];
+  int m_epollFd;
   ServerMaster *m_master;
   DeltaQueue *m_timerQueue;
   int m_workerCount;

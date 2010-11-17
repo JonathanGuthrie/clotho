@@ -49,7 +49,7 @@ void SessionDriver::NewSession(Socket *s) {
 
 
 void SessionDriver::WantsToReceive(void) {
-  m_server->WantsToReceive(m_sock);
+  m_server->WantsToReceive(m_sock, this);
 }
 
 void SessionDriver::WantsToSend(const uint8_t *buffer, size_t length) const {

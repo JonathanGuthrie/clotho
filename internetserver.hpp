@@ -21,6 +21,7 @@
  */
 
 #include <string>
+#include <set>
 
 #include <stdint.h>
 #include <netinet/in.h>
@@ -58,15 +59,14 @@ public:
 private:
   bool m_isRunning;
   Socket *m_listener;
-  // static void *SelectThreadFunction(void *);
+
   static void *ListenerThreadFunction(void *);
   static void *ReceiverThreadFunction(void *);
   static void *TimerQueueFunction(void *);
     
   WorkerPool *m_pool;
   pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;
-  // SYZYGY -- Need to do something different with the m_sessions
-  SessionDriver *m_sessions[FD_SETSIZE];
+  std::set<SessionDriver *> m_sessions;
   int m_epollFd;
   ServerMaster *m_master;
   DeltaQueue *m_timerQueue;

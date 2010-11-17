@@ -17,11 +17,6 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
   m_master = master;
   m_isRunning = true;
   m_listener = new Socket(bind_address, bind_port);
-  // SYZYGY -- Need to do something different with the m_sessions
-  for (int i=0; i<FD_SETSIZE; ++i) {
-    m_sessions[i] = new SessionDriver(this, m_master);
-    // new SessionDriver(this, m_pipeFd[1], master);
-  }
   m_epollFd = epoll_create1(EPOLL_CLOEXEC);
 }
 
@@ -52,9 +47,8 @@ void InternetServer::Shutdown() {
   pthread_join(m_receiverThread, NULL);
   pthread_join(m_timerQueueThread, NULL);
 
-  for (int i=0; i<FD_SETSIZE; ++i) {
-      KillSession(m_sessions[i]);
-      delete m_sessions[i];
+  for (std::set<SessionDriver *>::iterator i=m_sessions.begin(); i!=m_sessions.end(); ++i) {
+      KillSession(*i);
   }
   delete m_pool;
 }
@@ -64,18 +58,14 @@ void *InternetServer::ListenerThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
     Socket *worker = t->m_listener->Accept();
-    // SYZYGY -- Need to do something different with the m_sessions
-    if (FD_SETSIZE > worker->SockNum()) {
-      struct epoll_event event;
-      event.events = 0;
-      event.data.ptr = NULL;
-      errno = 0;
-      epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->SockNum(), &event);
-      t->m_sessions[worker->SockNum()]->NewSession(worker);
-    }
-    else {
-      delete worker;
-    }
+    SessionDriver *session = new SessionDriver(t, t->m_master);
+    t->m_sessions.insert(session);
+    struct epoll_event event;
+    event.events = 0;
+    event.data.ptr = NULL;
+    errno = 0;
+    epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->SockNum(), &event);
+    session->NewSession(worker);
   }
   return NULL;
 }
@@ -107,7 +97,6 @@ void *InternetServer::TimerQueueFunction(void *d) {
 
 
 void InternetServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
-  // SYZYGY -- This assumes the session table is indexed by socket number
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLONESHOT;
   event.data.ptr = driver;
@@ -122,6 +111,7 @@ void InternetServer::KillSession(SessionDriver *driver) {
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
     driver->DestroySession();
   }
+  m_sessions.erase(driver);
 }
 
 

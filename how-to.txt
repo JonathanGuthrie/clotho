@@ -1,0 +1,101 @@
+How to Create an Internet Server with Clotho
+
+Clotho is a library that is intended to be the basis for the creation of
+worker-thread Internet servers, and is supposed to handle the lion's share of
+threading issues without any effort on the part of the server developer.  In
+fact, if your server does not access any shared resources, an unlikely
+situation to be sure, there is no need to understand any of the process of
+creating threads, serializing access to resources, or any of that because
+Clotho handles it all.
+
+The theory of operations document describes the parts of the system, and how
+sessions, each which lasts for the entire lifespan of the socket they're
+associated with, are managed by the InternetServer class.  "Managed" in this
+sense means that the InternetServer class creates, allocates worker threads to,
+fetches data for, and eventually destroys each session as needed.  Since all
+Internet servers feature sockets that have similar life cycles, there's no
+need to derive any code from the InternetServer class.  It will do it's job
+no matter what kind of server you have.  Your job, as a server writer, is to
+create a session class that implements the protocol.
+
+Code in the session class implements the protocol that a server supports.
+Therefore, the job of implementing a server using Clotho can be thought of as
+implementing a custom session class.  In fact, I normally implement servers
+with the creation of three things:  A session class, that implements the 
+protocol, a master class that understands the configuration significant to 
+the session class, and a main function where execution begins.
+
+Session classes are derived from the InternetSession class that is part of
+Clotho.  If the session has indicated, by calling the WantsToReceive method of
+the driver class, that it is expecting data to arrive, the ReceiveData method
+is called when data have been received on the socket.  Note that the session
+class must call WantsToReceive any time it is ready for more data.  To send
+data to the far end, the session calls the driver classes' WantsToSend method.
+
+The idea is that ReceiveData takes the data it's given, processes it, and
+then returns as quickly as possible to free up the worker thread for another
+session that may need it.  Although I haven't gone to any trouble to deny you
+access to the actual socket, you should avoid the temptation to try to operate
+on it yourself.  Instead of performing a receive when you need more data, you
+should save the state you're in, call WantsToReceive, and return from 
+ReceiveData.  If you call receive on the socket, then the call may block which
+will prevent that worker thread from handling sessions that could make
+progress if there was a worker thread available.
+
+Be careful about the data that you get passed into ReceiveData.  It will arrive
+in random chunks, but most protocols expect the data to be carved up into
+blocks or lines that are logicically significant to the protocol.  You might
+want to do what I do and put parsing code in ReceiveData which breaks the
+incoming stream up into complete lines that are then passed to a HandleOneLine
+method.
+
+Another class you'll probably want to implement is what I call a master.  It is
+derived from the ServerMaster class.  As I've said before, the purpose of the
+master class is to know all of the configuration items requird for the server.
+Since the configuration of the session could be done in the initializer for the
+session class, it is the master class that actually calls new to create a
+session instance.  Beyond that, you can organize things however you want.  You
+could pass all of the significant configuration in the session initializer or
+use a pointer to the master class to call back into the master class when the
+session needs to know something about its configuration.  You should try to do
+whatever makes sense.
+
+Another thing that Internet servers often need is the ability to cause things 
+to happen after a certain amount of time has elapsed.  Idle timeouts, retry 
+timers, and invalid password delays all belong to the class of actions that 
+are made easier by having a facility for causing asynchronous events.  Clotho
+features such a facility through the AddTimerAction method in the
+InternetServer class.  To use asynchronous actions, you first create an action
+class derived from the DeltaQueueAction class.  The HandleTimeout method is
+what is called when the timer expires, or is purged for some other reason.  
+You can tell the difference between a timer expiring and a purge by the isPurge
+argument to the HandleTimeout method.  Currently, the only time isPurge is
+true when HandleTimeout is called is when the session is being destroyed.
+
+It is guaranteed that HandleTimeout will not be called when ReceiveData has
+been called, nor will ReceiveData be called when HandleTimeout be called.  Nor
+will ReceiveData be called twice without first returning nor will there be
+multiple calls to the same session's HandleTimeout occuring simultaneously.
+
+Sessions can be destroyed from within by invoking the server's KillSession 
+method.  That can be called from inside the session code or inside the
+HandleTimeout method of a timer action.  It will also be called if the far end
+closes the socket.  When a session is killed, the InternetServer calls the 
+session's destructor to allow for cleanup of the session's data.
+
+The last thing that must be done to implement an Internet server is to create
+and invoke an InternetServer.  A master instance is created first, and then
+a pointer to it is passed to the constructor of the InternetServer to create
+an Internet server instance.  The server instance's Run method is invoked to
+cause it to start running.  It will create a number of threads and then return.
+Even though it has returned, the server is still running, that is listening to
+a socket, creating sessions, and responding to client data and so forth.  To
+shut the server down, you invoke the server's Shutdown method, which will 
+kill all of the sessions cleanly, stop the threads and exit.
+
+I have provided a minimal example server in the example subdirectory.  It
+simply echoes back the data it receives, but it implements an idle timeout to
+illustrate asynchronous actions.
+
+I hope you find the Clotho library to be useful.  If you have any questions, I
+can be reached by email.

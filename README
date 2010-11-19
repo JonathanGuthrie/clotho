@@ -1,4 +1,9 @@
-Rename this project to clotho
+This is the Clotho project.  It is a library that is intended to make it easy
+to create worker thread pool based Internet servers.
+
+This project is named after the youngest of the Fates.  Clotho was responsible
+for spinning the thread of human life.  Appropriate for a threaded server
+library, eh? 
 
 Along with the library file, these header files are part of the deliverable:
 deltaqueueaction.hpp  internetserver.hpp   servermaster.hpp

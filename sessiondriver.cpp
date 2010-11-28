@@ -73,9 +73,9 @@ void SessionDriver::WantsToSend(const uint8_t *buffer, size_t length) const {
 }
 
 void SessionDriver::Lock(void) {
-  m_workMutex->Lock();
+  m_workMutex->lock();
 }
 
 void SessionDriver::Unlock(void) {
-  m_workMutex->Unlock();
+  m_workMutex->unlock();
 }

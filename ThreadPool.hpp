@@ -82,13 +82,13 @@ template <typename T>
 void ThreadPool<T>::WorkerThread(void) {
   // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
   while(1) {
-    m_pendingQueueMutex.Lock();
+    m_pendingQueueMutex.lock();
     if ((0 < m_queueHighwater) && (m_queueHighwater > m_pendingQueue.size())) {
       m_highwaterCond.broadcast();
     }
 
     if (m_stopRunning) {
-      m_pendingQueueMutex.Unlock();
+      m_pendingQueueMutex.unlock();
       break;
     }
 
@@ -96,7 +96,7 @@ void ThreadPool<T>::WorkerThread(void) {
     if (!m_pendingQueue.empty()) {
       work = m_pendingQueue.front();
       m_pendingQueue.pop();
-      m_pendingQueueMutex.Unlock();
+      m_pendingQueueMutex.unlock();
     }
     else {
       work = NULL;
@@ -106,7 +106,7 @@ void ThreadPool<T>::WorkerThread(void) {
 	work = m_pendingQueue.front();
 	m_pendingQueue.pop();
       }
-      m_pendingQueueMutex.Unlock();
+      m_pendingQueueMutex.unlock();
     }
     if (NULL != work) {
       work->DoWork();
@@ -122,20 +122,20 @@ ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_t
 
   m_workerThreads = new Thread*[m_workerThreadCount];
 
-  m_pendingQueueMutex.Lock();
+  m_pendingQueueMutex.lock();
   for (int i=0; i<m_workerThreadCount; ++i) {
     m_workerThreads[i] = new Thread(ThreadFunction, this);
   }
-  m_pendingQueueMutex.Unlock();
+  m_pendingQueueMutex.unlock();
 }
 
 
 template <typename T>
 ThreadPool<T>::~ThreadPool(void) {
-  m_pendingQueueMutex.Lock();
+  m_pendingQueueMutex.lock();
   
   m_stopRunning = true;
-  m_pendingQueueMutex.Unlock();
+  m_pendingQueueMutex.unlock();
   m_workersGo.broadcast();
   m_highwaterCond.broadcast();
 
@@ -158,15 +158,15 @@ void ThreadPool<T>::SendMessage(T message)
 {
   typename ThreadPool<T>::Tqueue::size_type depth;
   
-  m_pendingQueueMutex.Lock();
+  m_pendingQueueMutex.lock();
   m_pendingQueue.push(message);
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.Unlock();
+  m_pendingQueueMutex.unlock();
   m_workersGo.signal();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.Lock();
+    m_highwaterMutex.lock();
     m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.Unlock();
+    m_highwaterMutex.unlock();
   }
 }
 
@@ -179,18 +179,18 @@ template <typename T>
 void ThreadPool<T>::SendMessages(Tqueue &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
 
-  m_pendingQueueMutex.Lock();
+  m_pendingQueueMutex.lock();
   while (!messages.empty()) {
     m_pendingQueue.push(messages.front());
     messages.pop();
   }
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.Unlock();
+  m_pendingQueueMutex.unlock();
   m_workersGo.broadcast();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.Lock();
+    m_highwaterMutex.lock();
     m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.Unlock();
+    m_highwaterMutex.unlock();
   }
 }
 
@@ -202,18 +202,18 @@ void ThreadPool<T>::SendMessages(Tqueue &messages) {
 template <typename T>
 void ThreadPool<T>::SendMessages(Tlist &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
-  m_pendingQueueMutex.Lock();
+  m_pendingQueueMutex.lock();
   
   for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
     m_pendingQueue.push(*i);
   }
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.Unlock();
+  m_pendingQueueMutex.unlock();
   m_workersGo.broadcast();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.Lock();
+    m_highwaterMutex.lock();
     m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.Unlock();
+    m_highwaterMutex.unlock();
   }
 }
 

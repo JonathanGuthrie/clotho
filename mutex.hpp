@@ -23,14 +23,13 @@
 
 #include <pthread.h>
 
-class Mutex
-{
+class Mutex {
 private:
   pthread_mutex_t m_mutex;
 
 public:
-  void Lock(void) { pthread_mutex_lock(&m_mutex); }
-  void Unlock(void) { pthread_mutex_unlock(&m_mutex); }
+  void lock(void) { pthread_mutex_lock(&m_mutex); }
+  void unlock(void) { pthread_mutex_unlock(&m_mutex); }
   Mutex();
   ~Mutex();
   pthread_mutex_t *mutex() { return &m_mutex; }

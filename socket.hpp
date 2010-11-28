@@ -26,17 +26,14 @@
 
 #include <string>
 
-class SocketSocketErrorException
-{
+class SocketSocketErrorException {
 };
 
-class SocketBindErrorException
-{
+class SocketBindErrorException {
 };
 
 
-class Socket
-{
+class Socket {
 private:
   int sock;
   struct sockaddr_in address; 
@@ -45,11 +42,11 @@ private:
 
 public:
   Socket(uint32_t bind_address, short bind_port, int backlog = 16384) throw(SocketSocketErrorException, SocketBindErrorException);
-  Socket *Accept(void);
+  Socket *accept(void);
   virtual ~Socket();
-  virtual ssize_t Receive(uint8_t *buffer, size_t size);
-  virtual ssize_t Send(const uint8_t *data, size_t length);
-  int SockNum() const { return sock; }
+  virtual ssize_t receive(uint8_t *buffer, size_t size);
+  virtual ssize_t send(const uint8_t *data, size_t length);
+  int sockNum() const { return sock; }
 };
 
 #endif // _SOCKET_HPP_INCLUDED_

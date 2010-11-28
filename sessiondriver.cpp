@@ -41,7 +41,7 @@ SessionDriver::~SessionDriver(void) {
 void SessionDriver::doWork(void) {
   uint8_t recvBuffer[1000];
   // When it gets here, it knows that the receive on Sock will not block
-  ssize_t numOctets = m_sock->Receive(recvBuffer, 1000);
+  ssize_t numOctets = m_sock->receive(recvBuffer, 1000);
   if (0 < numOctets) {
     lock();
     m_session->receiveData(recvBuffer, numOctets);
@@ -69,7 +69,7 @@ void SessionDriver::wantsToReceive(void) {
 }
 
 void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
-  m_sock->Send(buffer, length);
+  m_sock->send(buffer, length);
 }
 
 void SessionDriver::lock(void) {

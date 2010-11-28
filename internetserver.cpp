@@ -76,14 +76,14 @@ void InternetServer::shutdown() {
 void *InternetServer::listenerThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
-    Socket *worker = t->m_listener->Accept();
+    Socket *worker = t->m_listener->accept();
     SessionDriver *session = new SessionDriver(t, t->m_master);
     t->m_sessions.insert(session);
     struct epoll_event event;
     event.events = 0;
     event.data.ptr = NULL;
     errno = 0;
-    epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->SockNum(), &event);
+    epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->sockNum(), &event);
     session->newSession(worker);
   }
   return NULL;
@@ -120,14 +120,14 @@ void InternetServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
   event.events = EPOLLIN | EPOLLONESHOT;
   event.data.ptr = driver;
   errno = 0;
-  epoll_ctl(m_epollFd, EPOLL_CTL_MOD, sock->SockNum(), &event);
+  epoll_ctl(m_epollFd, EPOLL_CTL_MOD, sock->sockNum(), &event);
 }
 
 
 void InternetServer::killSession(SessionDriver *driver) {
   m_timerQueue->purgeSession(driver);
   if (NULL != driver->socket()) {
-    epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
+    epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->sockNum(), NULL);
   }
   driver->destroySession();
   m_sessions.erase(driver);

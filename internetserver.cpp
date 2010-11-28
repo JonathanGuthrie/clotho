@@ -97,7 +97,7 @@ void *InternetServer::receiverThreadFunction(void *d) {
 
     int count = epoll_wait(t->m_epollFd, events, 100, 1000);
     for (int i=0; i<count; ++i) {
-      t->m_pool->SendMessage((SessionDriver *)events[i].data.ptr);
+      t->m_pool->sendMessage((SessionDriver *)events[i].data.ptr);
     }
   }
   return NULL;

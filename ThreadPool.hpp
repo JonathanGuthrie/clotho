@@ -51,12 +51,12 @@ public:
   typedef std::queue<int> IntQueue;
   ThreadPool(int numThreads = 1, typename Tqueue::size_type queue_highwater = 0);
   ~ThreadPool(void);
-  void SendMessage(T message);
-  void SendMessages(Tqueue &messages);
-  void SendMessages(Tlist &messages);
+  void sendMessage(T message);
+  void sendMessages(Tqueue &messages);
+  void sendMessages(Tlist &messages);
 
 private:
-  void WorkerThread(void);
+  void workerThread(void);
   static void *ThreadFunction(void*);
 
   Cond m_workersGo;
@@ -73,13 +73,13 @@ private:
 template <typename T>
 void *ThreadPool<T>::ThreadFunction(void *instance_pointer) {
   ThreadPool<T> *self = (ThreadPool<T> *)instance_pointer;
-  self->WorkerThread();
+  self->workerThread();
   return NULL;
 }
 
 
 template <typename T>
-void ThreadPool<T>::WorkerThread(void) {
+void ThreadPool<T>::workerThread(void) {
   // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
   while(1) {
     m_pendingQueueMutex.lock();
@@ -154,7 +154,7 @@ ThreadPool<T>::~ThreadPool(void) {
  * put this at the back of the message queue and go about our way.
  */
 template <typename T>
-void ThreadPool<T>::SendMessage(T message)
+void ThreadPool<T>::sendMessage(T message)
 {
   typename ThreadPool<T>::Tqueue::size_type depth;
   
@@ -176,7 +176,7 @@ void ThreadPool<T>::SendMessage(T message)
  * queue, otherwise it will allocate all the messages and put nothing on to the idle queue
  */
 template <typename T>
-void ThreadPool<T>::SendMessages(Tqueue &messages) {
+void ThreadPool<T>::sendMessages(Tqueue &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
 
   m_pendingQueueMutex.lock();
@@ -200,7 +200,7 @@ void ThreadPool<T>::SendMessages(Tqueue &messages) {
  * queue, otherwise it will allocate all the messages and put nothing on to the idle queue
  */
 template <typename T>
-void ThreadPool<T>::SendMessages(Tlist &messages) {
+void ThreadPool<T>::sendMessages(Tlist &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
   m_pendingQueueMutex.lock();
   

@@ -35,8 +35,8 @@ class SocketBindErrorException {
 
 class Socket {
 private:
-  int sock;
-  struct sockaddr_in address; 
+  int m_sock;
+  struct sockaddr_in m_address; 
   // I need a copy constructor because the "connect" function returns a pointer to a Socket instance
   Socket(int socket, struct sockaddr_in address);
 
@@ -46,7 +46,7 @@ public:
   virtual ~Socket();
   virtual ssize_t receive(uint8_t *buffer, size_t size);
   virtual ssize_t send(const uint8_t *data, size_t length);
-  int sockNum() const { return sock; }
+  int sockNum() const { return m_sock; }
 };
 
 #endif // _SOCKET_HPP_INCLUDED_

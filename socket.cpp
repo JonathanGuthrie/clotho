@@ -22,22 +22,22 @@
 #include <string.h>
 
 Socket::Socket(int socket, struct sockaddr_in address) {
-  this->sock = socket;
-  this->address = address;
+  this->m_sock = socket;
+  this->m_address = address;
 }
 
 Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(SocketSocketErrorException, SocketBindErrorException) {
   try {
-    if (0 < (sock = socket(AF_INET, SOCK_STREAM, 0))) {
+    if (0 < (m_sock = socket(AF_INET, SOCK_STREAM, 0))) {
       int reuse_flag = 1;
-      ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_flag, sizeof(int));
-      memset(&address, 0, sizeof(struct sockaddr_in));
-      address.sin_family = AF_INET;
-      address.sin_addr.s_addr = htonl(bind_address);
-      address.sin_port = htons(bind_port);
+      ::setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, &reuse_flag, sizeof(int));
+      memset(&m_address, 0, sizeof(struct sockaddr_in));
+      m_address.sin_family = AF_INET;
+      m_address.sin_addr.s_addr = htonl(bind_address);
+      m_address.sin_port = htons(bind_port);
 
-      if (0 == bind(sock, (struct sockaddr *) &address, sizeof(address))) {
-	listen(sock, backlog);
+      if (0 == bind(m_sock, (struct sockaddr *) &m_address, sizeof(m_address))) {
+	listen(m_sock, backlog);
       }
       else {
 	throw SocketBindErrorException();
@@ -48,7 +48,7 @@ Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(Socket
     }
   }
   catch (SocketBindErrorException) {
-    close(sock);
+    close(m_sock);
     throw;
   }
 }
@@ -60,21 +60,21 @@ Socket *Socket::accept(void) {
   int temp_socket;
 
   address_len = sizeof(temp);
-  temp_socket = ::accept(sock, (struct sockaddr *)&temp, &address_len);
+  temp_socket = ::accept(m_sock, (struct sockaddr *)&temp, &address_len);
   int reuse_flag = 1;
   return new Socket(temp_socket, temp);
 }
 
 
 Socket::~Socket() {
-  close(sock);
+  close(m_sock);
 }
 
 ssize_t Socket::send(const uint8_t *data, size_t length) {
-  return ::send(sock, data, length, 0);
+  return ::send(m_sock, data, length, 0);
 }
 
 ssize_t Socket::receive(uint8_t *buffer, size_t size) {
-  return ::recv(sock, buffer, size, 0);
+  return ::recv(m_sock, buffer, size, 0);
 }
 

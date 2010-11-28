@@ -66,9 +66,9 @@ void DeltaQueue::tick() {
   while (NULL != temp) {
     DeltaQueueAction *next = temp->m_next;
 
-    temp->m_session->driver()->Lock();
+    temp->m_session->driver()->lock();
     temp->handleTimeout(false);
-    temp->m_session->driver()->Unlock();
+    temp->m_session->driver()->unlock();
     delete temp;
     temp = next;
   }

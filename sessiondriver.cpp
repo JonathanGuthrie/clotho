@@ -38,19 +38,19 @@ SessionDriver::~SessionDriver(void) {
 }
 
 
-void SessionDriver::DoWork(void) {
+void SessionDriver::doWork(void) {
   uint8_t recvBuffer[1000];
   // When it gets here, it knows that the receive on Sock will not block
   ssize_t numOctets = m_sock->Receive(recvBuffer, 1000);
   if (0 < numOctets) {
-    Lock();
+    lock();
     m_session->receiveData(recvBuffer, numOctets);
-    Unlock();
+    unlock();
   }
 }
 
 
-void SessionDriver::DestroySession(void) {
+void SessionDriver::destroySession(void) {
   delete m_session;
   m_session = NULL;
   delete m_sock;
@@ -58,24 +58,24 @@ void SessionDriver::DestroySession(void) {
 }
 
 
-void SessionDriver::NewSession(Socket *s) {
+void SessionDriver::newSession(Socket *s) {
   m_sock = s;
   m_session = m_master->newSession(this, m_server);
 }
 
 
-void SessionDriver::WantsToReceive(void) {
+void SessionDriver::wantsToReceive(void) {
   m_server->wantsToReceive(m_sock, this);
 }
 
-void SessionDriver::WantsToSend(const uint8_t *buffer, size_t length) const {
+void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
   m_sock->Send(buffer, length);
 }
 
-void SessionDriver::Lock(void) {
+void SessionDriver::lock(void) {
   m_workMutex->lock();
 }
 
-void SessionDriver::Unlock(void) {
+void SessionDriver::unlock(void) {
   m_workMutex->unlock();
 }

@@ -84,7 +84,7 @@ void *InternetServer::listenerThreadFunction(void *d) {
     event.data.ptr = NULL;
     errno = 0;
     epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->SockNum(), &event);
-    session->NewSession(worker);
+    session->newSession(worker);
   }
   return NULL;
 }
@@ -129,7 +129,7 @@ void InternetServer::killSession(SessionDriver *driver) {
   if (NULL != driver->socket()) {
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
   }
-  driver->DestroySession();
+  driver->destroySession();
   m_sessions.erase(driver);
   delete driver;
 }

@@ -109,7 +109,7 @@ void ThreadPool<T>::WorkerThread(void) {
       m_pendingQueueMutex.unlock();
     }
     if (NULL != work) {
-      work->DoWork();
+      work->doWork();
     }
   }
 }

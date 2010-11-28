@@ -34,11 +34,11 @@ void TestServer::test(Socket *s) {
   m_wantsToReceive = false;
   m_actionQueueHead = NULL;
   SessionDriver *driver = new SessionDriver(this, m_master);
-  driver->NewSession(s);
+  driver->newSession(s);
   while (m_keepRunning) {
     if (m_wantsToReceive) {
       m_wantsToReceive = false;
-      driver->DoWork();
+      driver->doWork();
     }
     while (NULL != m_actionQueueHead) {
       DeltaQueueAction *temp;

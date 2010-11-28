@@ -34,26 +34,25 @@ class Mutex;
 // data.  It knows server-specific stuff and the merest bit of session stuff.
 // This has to be a separate class from InternetServer because I want one of these
 // for each InternetSession
-class SessionDriver
-{
+class SessionDriver {
 public:
   SessionDriver(Server *server, ServerMaster *master);
   ~SessionDriver();
-  void DoWork(void);
-  void NewSession(Socket *s);
-  void DestroySession(void);
+  void doWork(void);
+  void newSession(Socket *s);
+  void destroySession(void);
   const InternetSession *session(void) const { return m_session; }
   Socket *socket(void) const { return m_sock; }
   Server *server(void) const { return m_server; }
   ServerMaster *master(void) const { return m_master; }
-  void Lock(void);
-  void Unlock(void);
-  void WantsToReceive(void);
-  void WantsToSend(const std::string &s) const { WantsToSend((uint8_t *)s.data(), s.size()); }
-  void WantsToSend(const insensitiveString &s) const { WantsToSend((uint8_t *)s.data(), s.size()); }
-  void WantsToSend(const char *buffer, size_t length) const { WantsToSend((uint8_t *)buffer, length); }
-  void WantsToSend(const char *buffer) const { WantsToSend((uint8_t *)buffer, strlen(buffer)); }
-  void WantsToSend(const uint8_t *buffer, size_t length) const;
+  void lock(void);
+  void unlock(void);
+  void wantsToReceive(void);
+  void wantsToSend(const std::string &s) const { wantsToSend((uint8_t *)s.data(), s.size()); }
+  void wantsToSend(const insensitiveString &s) const { wantsToSend((uint8_t *)s.data(), s.size()); }
+  void wantsToSend(const char *buffer, size_t length) const { wantsToSend((uint8_t *)buffer, length); }
+  void wantsToSend(const char *buffer) const { wantsToSend((uint8_t *)buffer, strlen(buffer)); }
+  void wantsToSend(const uint8_t *buffer, size_t length) const;
 
 
 private:

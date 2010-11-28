@@ -26,10 +26,10 @@ TestServer::TestServer(ServerMaster *master) throw(ServerErrorException) : m_mas
 TestServer::~TestServer() {
 }
 
-void TestServer::Run(void) {
+void TestServer::run(void) {
 }
 
-void TestServer::Test(Socket *s) {
+void TestServer::test(Socket *s) {
   m_keepRunning = true;
   m_wantsToReceive = false;
   m_actionQueueHead = NULL;
@@ -51,22 +51,22 @@ void TestServer::Test(Socket *s) {
   }
 }
 
-void TestServer::Shutdown() {
+void TestServer::shutdown() {
   m_keepRunning = false;
 }
 
-void TestServer::AddTimerAction(DeltaQueueAction *action) {
+void TestServer::addTimerAction(DeltaQueueAction *action) {
   // std::cout << "Called AddTimerAction" << std::endl;
   action->m_next = m_actionQueueHead;
   m_actionQueueHead = action;
 }
 
-void TestServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
+void TestServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
   // std::cout << "Called WantsToReceive" << std::endl;
   m_wantsToReceive = true;
 }
 
-void TestServer::KillSession(SessionDriver *driver) {
+void TestServer::killSession(SessionDriver *driver) {
   // std::cout << "Called KillSession" << std::endl;
   m_keepRunning = false;
 }

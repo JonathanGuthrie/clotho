@@ -54,8 +54,7 @@ class InternetSession;
 template <typename T>class ThreadPool;
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
-class ServerErrorException
-{
+class ServerErrorException {
 public:
   ServerErrorException(int error) : m_systemError(error) {}
 private:
@@ -66,11 +65,11 @@ class Server {
 public:
   Server(void);
   virtual ~Server();
-  virtual void Run(void) = 0;
-  virtual void Shutdown() = 0;
-  virtual void AddTimerAction(DeltaQueueAction *action) = 0;
-  virtual void WantsToReceive(const Socket *sock, SessionDriver *driver) = 0;
-  virtual void KillSession(SessionDriver *driver) = 0;
+  virtual void run(void) = 0;
+  virtual void shutdown() = 0;
+  virtual void addTimerAction(DeltaQueueAction *action) = 0;
+  virtual void wantsToReceive(const Socket *sock, SessionDriver *driver) = 0;
+  virtual void killSession(SessionDriver *driver) = 0;
 };
 
 #endif // _SERVER_HPP_INCLUDED_

@@ -66,7 +66,7 @@ void InternetServer::shutdown() {
     pthread_join(m_timerQueueThread, NULL);
 
     for (std::set<SessionDriver *>::iterator i=m_sessions.begin(); i!=m_sessions.end(); ++i) {
-      KillSession(*i);
+      killSession(*i);
     }
     delete m_pool;
   }

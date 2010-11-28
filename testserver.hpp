@@ -43,12 +43,12 @@ public:
   typedef std::list<DeltaQueueAction> ActionQueue;
   TestServer(ServerMaster *master) throw(ServerErrorException);
   virtual ~TestServer();
-  virtual void Run(void);
-  virtual void Test(Socket *s);
-  virtual void Shutdown();
-  virtual void AddTimerAction(DeltaQueueAction *action);
-  virtual void WantsToReceive(const Socket *sock, SessionDriver *driver);
-  virtual void KillSession(SessionDriver *driver);
+  virtual void run(void);
+  virtual void test(Socket *s);
+  virtual void shutdown();
+  virtual void addTimerAction(DeltaQueueAction *action);
+  virtual void wantsToReceive(const Socket *sock, SessionDriver *driver);
+  virtual void killSession(SessionDriver *driver);
 
 private:
   Socket *m_testSocket;

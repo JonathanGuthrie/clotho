@@ -32,11 +32,11 @@ int main(int argc, char **argv) {
 
   InternetServer *server = new InternetServer(bind_address, port, &master, 1);
     
-  server->Run();
+  server->run();
   std::cout << "Hit q and return to exit" << std::endl;
   char response;
   std::cin >> response;
-  server->Shutdown();
+  server->shutdown();
   delete server;
    
   return EXIT_SUCCESS;

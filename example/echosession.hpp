@@ -24,18 +24,17 @@ class InternetServer;
 
 class EchoSession :  public InternetSession {
 private:
-  InternetServer *m_server;
+  Server *m_server;
   EchoMaster *m_master;
   time_t m_lastTrafficTime;
  
 public:
   EchoSession(EchoMaster *master, SessionDriver *driver);
   virtual ~EchoSession();
-  virtual void ReceiveData(uint8_t *buffer, size_t length);
-  time_t LastTrafficTime(void) const { return m_lastTrafficTime; }
-  InternetServer *server(void) const { return m_server; }
-  void IdleTimeout(void);
-  
+  virtual void receiveData(uint8_t *buffer, size_t length);
+  time_t lastTrafficTime(void) const { return m_lastTrafficTime; }
+  Server *server(void) const { return m_server; }
+  void idleTimeout(void);
 };
 
 #endif //_ECHOSESSION_HPP_INCLUDED_

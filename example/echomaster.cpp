@@ -22,6 +22,6 @@ EchoMaster::EchoMaster(int idle_timeout) : m_idleTimeout(idle_timeout) {
 EchoMaster::~EchoMaster(void) {
 }
 
-InternetSession *EchoMaster::NewSession(SessionDriver *driver, InternetServer *server) {
+InternetSession *EchoMaster::newSession(SessionDriver *driver, Server *server) {
   return new EchoSession(this, driver);
 }

@@ -25,8 +25,8 @@ class EchoMaster : public ServerMaster {
 public:
   EchoMaster(int idle_timeout);
   virtual ~EchoMaster(void);
-  virtual InternetSession *NewSession(SessionDriver *driver, InternetServer *server);
-  int IdleTimeout(void) const { return m_idleTimeout; }
+  virtual InternetSession *newSession(SessionDriver *driver, Server *server);
+  int idleTimeout(void) const { return m_idleTimeout; }
 
 private:
   const int m_idleTimeout;

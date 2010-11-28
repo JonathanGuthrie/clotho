@@ -32,10 +32,10 @@ class SessionDriver;
 class InternetSession {
 public:
   InternetSession(ServerMaster *master, SessionDriver *driver);
-  virtual void ReceiveData(uint8_t *buffer, size_t size) = 0;
+  virtual void receiveData(uint8_t *buffer, size_t size) = 0;
   virtual ~InternetSession();
   SessionDriver *driver() const { return m_driver; }
-  ServerMaster *master() const { return m_master; }
+  ServerMaster *mxaster() const { return m_master; }
 
 protected:
   ServerMaster *m_master;

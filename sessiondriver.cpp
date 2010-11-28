@@ -44,7 +44,7 @@ void SessionDriver::DoWork(void) {
   ssize_t numOctets = m_sock->Receive(recvBuffer, 1000);
   if (0 < numOctets) {
     Lock();
-    m_session->ReceiveData(recvBuffer, numOctets);
+    m_session->receiveData(recvBuffer, numOctets);
     Unlock();
   }
 }

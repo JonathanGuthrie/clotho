@@ -30,17 +30,16 @@
 
 class SessionDriver;
 
-class DeltaQueue
-{
+class DeltaQueue {
 public:
-    void Tick(void);
-    DeltaQueue();
-    void InsertNewAction(DeltaQueueAction *action);
-    void PurgeSession(const SessionDriver *driver);
+  void tick(void);
+  DeltaQueue();
+  void insertNewAction(DeltaQueueAction *action);
+  void purgeSession(const SessionDriver *driver);
 
 private:
-    Mutex m_queueMutex;
-    DeltaQueueAction *m_queueHead;
+  Mutex m_queueMutex;
+  DeltaQueueAction *m_queueHead;
 };
 
 #endif // _DELTAQUEUE_HPP_INCLUDED_

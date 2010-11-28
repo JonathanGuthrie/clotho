@@ -44,8 +44,8 @@ void TestServer::Test(Socket *s) {
       DeltaQueueAction *temp;
 
       temp = m_actionQueueHead;
-      m_actionQueueHead = m_actionQueueHead->next;
-      temp->HandleTimeout(false);
+      m_actionQueueHead = m_actionQueueHead->m_next;
+      temp->handleTimeout(false);
       delete temp;
     }
   }
@@ -57,7 +57,7 @@ void TestServer::Shutdown() {
 
 void TestServer::AddTimerAction(DeltaQueueAction *action) {
   // std::cout << "Called AddTimerAction" << std::endl;
-  action->next = m_actionQueueHead;
+  action->m_next = m_actionQueueHead;
   m_actionQueueHead = action;
 }
 

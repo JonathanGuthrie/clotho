@@ -44,103 +44,96 @@ DeltaQueue::DeltaQueue() : m_queueHead(NULL) {
 // this thread, I don't have to protect it with a mutex, and since I've unlocked the mutex,
 // the call to HandleTimeout can do anything it damn well pleases and there won't be a
 // deadlock due to the code here.
-void DeltaQueue::Tick() {
-    DeltaQueueAction *temp = NULL;
+void DeltaQueue::tick() {
+  DeltaQueueAction *temp = NULL;
 
-    m_queueMutex.Lock();
-    // decrement head
+  m_queueMutex.Lock();
+  // decrement head
+  if (NULL != m_queueHead) {
+    --m_queueHead->m_delta;
+    if (0 == m_queueHead->m_delta) {
+      DeltaQueueAction *endMarker;
+
+      temp = m_queueHead;
+      while ((NULL != m_queueHead) && (0 == m_queueHead->m_delta)) {
+	endMarker = m_queueHead;
+	m_queueHead = m_queueHead->m_next;
+      }
+      endMarker->m_next = NULL;
+    }
+  }
+  m_queueMutex.Unlock();
+  while (NULL != temp) {
+    DeltaQueueAction *next = temp->m_next;
+
+    temp->m_session->driver()->Lock();
+    temp->handleTimeout(false);
+    temp->m_session->driver()->Unlock();
+    delete temp;
+    temp = next;
+  }
+}
+
+
+void DeltaQueue::insertNewAction(DeltaQueueAction *action) {
+  m_queueMutex.Lock();
+  if ((NULL == m_queueHead) || (m_queueHead->m_delta > action->m_delta)) {
     if (NULL != m_queueHead) {
-	--m_queueHead->m_delta;
-	if (0 == m_queueHead->m_delta) {
-	    DeltaQueueAction *endMarker;
-
-	    temp = m_queueHead;
-	    while ((NULL != m_queueHead) && (0 == m_queueHead->m_delta))
-	    {
-		endMarker = m_queueHead;
-		m_queueHead = m_queueHead->next;
-	    }
-	    endMarker->next = NULL;
-	}
+      m_queueHead->m_delta -= action->m_delta;
     }
-    m_queueMutex.Unlock();
-    while (NULL != temp) {
-	DeltaQueueAction *next = temp->next;
+    action->m_next = m_queueHead;
+    m_queueHead = action;
+  }
+  else {
+    // If I get here, I know that the first item is not going to be the new action
+    DeltaQueueAction *item = m_queueHead;
 
-	temp->m_session->driver()->Lock();
-	temp->HandleTimeout(false);
-	temp->m_session->driver()->Unlock();
-	delete temp;
-	temp = next;
+    action->m_delta -= m_queueHead->m_delta;
+    for (item=m_queueHead; (item->m_next!=NULL) && (item->m_next->m_delta < action->m_delta); item=item->m_next) {
+      action->m_delta -= item->m_next->m_delta;
     }
+    // When I get here, I know that item points to the item before where the new action goes
+    if (NULL != item->m_next) {
+      item->m_next->m_delta -= action->m_delta;
+    }
+    action->m_next = item->m_next;
+    item->m_next = action;
+  }
+  m_queueMutex.Unlock();
 }
 
 
-void DeltaQueue::InsertNewAction(DeltaQueueAction *action)
-{
-    m_queueMutex.Lock();
-    if ((NULL == m_queueHead) || (m_queueHead->m_delta > action->m_delta))
-    {
-	if (NULL != m_queueHead)
-	{
-	    m_queueHead->m_delta -= action->m_delta;
-	}
-	action->next = m_queueHead;
-	m_queueHead = action;
+void DeltaQueue::purgeSession(const SessionDriver *driver) {
+  DeltaQueueAction *temp, *next;
+  DeltaQueueAction *prev = NULL;
+  DeltaQueueAction *purgeList = NULL;
+
+  m_queueMutex.Lock();
+  for(temp = m_queueHead; NULL != temp; temp=next) {
+    next = temp->m_next;
+    if (driver == temp->m_session->driver()) {
+      if (NULL != next) {
+	next->m_delta += temp->m_delta;
+      }
+      if (NULL != prev) {
+	prev->m_next = temp->m_next;
+      }
+      else {
+	m_queueHead = temp->m_next;
+      }
+      temp->m_next = purgeList;
+      purgeList = temp;
     }
-    else
-    {
-	// If I get here, I know that the first item is not going to be the new action
-	DeltaQueueAction *item = m_queueHead;
-
-	action->m_delta -= m_queueHead->m_delta;
-	for (item=m_queueHead; (item->next!=NULL) && (item->next->m_delta < action->m_delta); item=item->next)
-	{
-	    action->m_delta -= item->next->m_delta;
-	}
-	// When I get here, I know that item points to the item before where the new action goes
-	if (NULL != item->next)
-	{
-	    item->next->m_delta -= action->m_delta;
-	}
-	action->next = item->next;
-	item->next = action;
+    else {
+      prev = temp;
     }
-    m_queueMutex.Unlock();
-}
+  }
+  m_queueMutex.Unlock();
+  while (NULL != purgeList) {
+    DeltaQueueAction *next = purgeList->m_next;
 
-
-void DeltaQueue::PurgeSession(const SessionDriver *driver) {
-    DeltaQueueAction *temp, *next;
-    DeltaQueueAction *prev = NULL;
-    DeltaQueueAction *purgeList = NULL;
-
-    m_queueMutex.Lock();
-    for(temp = m_queueHead; NULL != temp; temp=next) {
-	next = temp->next;
-	if (driver == temp->m_session->driver()) {
-	    if (NULL != next) {
-		next->m_delta += temp->m_delta;
-	    }
-	    if (NULL != prev) {
-		prev->next = temp->next;
-	    }
-	    else {
-		m_queueHead = temp->next;
-	    }
-	    temp->next = purgeList;
-	    purgeList = temp;
-	}
-	else {
-	    prev = temp;
-	}
-    }
-    m_queueMutex.Unlock();
-    while (NULL != purgeList) {
-	DeltaQueueAction *next = purgeList->next;
-
-	purgeList->HandleTimeout(true);
-	delete purgeList;
-	purgeList = next;
-    }
+    purgeList->handleTimeout(true);
+    delete purgeList;
+    purgeList = next;
+  }
 }

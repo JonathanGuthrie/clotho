@@ -109,7 +109,7 @@ void *InternetServer::TimerQueueFunction(void *d) {
   while(t->m_isRunning) {
     sleep(1);
     // puts("tick");
-    t->m_timerQueue->Tick();
+    t->m_timerQueue->tick();
   }
   return NULL;
 }
@@ -125,7 +125,7 @@ void InternetServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
 
 
 void InternetServer::KillSession(SessionDriver *driver) {
-  m_timerQueue->PurgeSession(driver);
+  m_timerQueue->purgeSession(driver);
   if (NULL != driver->socket()) {
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
   }
@@ -136,5 +136,5 @@ void InternetServer::KillSession(SessionDriver *driver) {
 
 
 void InternetServer::AddTimerAction(DeltaQueueAction *action) {
-  m_timerQueue->InsertNewAction(action);
+  m_timerQueue->insertNewAction(action);
 }

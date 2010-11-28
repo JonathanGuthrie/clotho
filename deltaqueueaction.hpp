@@ -28,15 +28,14 @@
 
 class InternetSession;
 
-class DeltaQueueAction
-{
+class DeltaQueueAction {
 public:
   /*
    * delta is the timeout in seconds.  The session pointer points to the InternetSession that needs the
    * asynchronous action.
    */
   DeltaQueueAction(int delta, InternetSession *session);
-  class DeltaQueueAction *next;
+  class DeltaQueueAction *m_next;
   /*
    * HandleTimeout is where the work happens.  Obviously, you must derive a subclass to do anything with 
    * an asynchronous action.  The isPurge flag will be true if the timer is being called for something
@@ -44,7 +43,7 @@ public:
    * and session closing when isPurge is false, otherwise you wouldn't do anything because a true in
    * isPurge means that you're already in the context of a cleanup.
    */
-  virtual void HandleTimeout(bool isPurge) = 0;
+  virtual void handleTimeout(bool isPurge) = 0;
   unsigned m_delta;
   InternetSession *m_session;
 };

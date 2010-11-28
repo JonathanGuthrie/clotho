@@ -31,7 +31,7 @@ class ServerMaster {
 public:
   ServerMaster(void);
   virtual ~ServerMaster(void) = 0;
-  virtual InternetSession *NewSession(SessionDriver *driver, Server *server) = 0;
+  virtual InternetSession *newSession(SessionDriver *driver, Server *server) = 0;
 };
 
 #endif //_SERVERMASTER_HPP_INCLUDED_

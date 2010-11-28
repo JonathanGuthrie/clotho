@@ -60,7 +60,7 @@ void SessionDriver::DestroySession(void) {
 
 void SessionDriver::NewSession(Socket *s) {
   m_sock = s;
-  m_session = m_master->NewSession(this, m_server);
+  m_session = m_master->newSession(this, m_server);
 }
 
 

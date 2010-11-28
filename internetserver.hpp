@@ -59,19 +59,19 @@ class InternetServer : public Server {
 public:
   InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_worker_threads = 10) throw(ServerErrorException);
   virtual ~InternetServer();
-  virtual void Run();
-  virtual void Shutdown();
-  virtual void AddTimerAction(DeltaQueueAction *action);
-  virtual void WantsToReceive(const Socket *sock, SessionDriver *driver);
-  virtual void KillSession(SessionDriver *driver);
+  virtual void run();
+  virtual void shutdown();
+  virtual void addTimerAction(DeltaQueueAction *action);
+  virtual void wantsToReceive(const Socket *sock, SessionDriver *driver);
+  virtual void killSession(SessionDriver *driver);
 
 private:
   bool m_isRunning;
   Socket *m_listener;
 
-  static void *ListenerThreadFunction(void *);
-  static void *ReceiverThreadFunction(void *);
-  static void *TimerQueueFunction(void *);
+  static void *listenerThreadFunction(void *);
+  static void *receiverThreadFunction(void *);
+  static void *timerQueueFunction(void *);
     
   WorkerPool *m_pool;
   pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;

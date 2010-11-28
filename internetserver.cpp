@@ -38,15 +38,15 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
 
 
 InternetServer::~InternetServer() {
-  Shutdown();
+  shutdown();
   delete m_timerQueue;
 }
 
 
-void InternetServer::Run() {
-  if (0 == pthread_create(&m_listenerThread, NULL, ListenerThreadFunction, this)) {
-    if (0 == pthread_create(&m_receiverThread, NULL, ReceiverThreadFunction, this)) {
-      if (0 == pthread_create(&m_timerQueueThread, NULL, TimerQueueFunction, this)) {
+void InternetServer::run() {
+  if (0 == pthread_create(&m_listenerThread, NULL, listenerThreadFunction, this)) {
+    if (0 == pthread_create(&m_receiverThread, NULL, receiverThreadFunction, this)) {
+      if (0 == pthread_create(&m_timerQueueThread, NULL, timerQueueFunction, this)) {
 	m_pool = new WorkerPool(m_workerCount);
       }
     }
@@ -54,7 +54,7 @@ void InternetServer::Run() {
 }
 
 
-void InternetServer::Shutdown() {
+void InternetServer::shutdown() {
   if (m_isRunning) {
     m_isRunning = false;
     pthread_cancel(m_listenerThread);
@@ -73,7 +73,7 @@ void InternetServer::Shutdown() {
 }
 
 
-void *InternetServer::ListenerThreadFunction(void *d) {
+void *InternetServer::listenerThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
     Socket *worker = t->m_listener->Accept();
@@ -90,7 +90,7 @@ void *InternetServer::ListenerThreadFunction(void *d) {
 }
 
 
-void *InternetServer::ReceiverThreadFunction(void *d) {
+void *InternetServer::receiverThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
     struct epoll_event events[100];
@@ -104,7 +104,7 @@ void *InternetServer::ReceiverThreadFunction(void *d) {
 }
 
 
-void *InternetServer::TimerQueueFunction(void *d) {
+void *InternetServer::timerQueueFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
     sleep(1);
@@ -115,7 +115,7 @@ void *InternetServer::TimerQueueFunction(void *d) {
 }
 
 
-void InternetServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
+void InternetServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLONESHOT;
   event.data.ptr = driver;
@@ -124,7 +124,7 @@ void InternetServer::WantsToReceive(const Socket *sock, SessionDriver *driver) {
 }
 
 
-void InternetServer::KillSession(SessionDriver *driver) {
+void InternetServer::killSession(SessionDriver *driver) {
   m_timerQueue->purgeSession(driver);
   if (NULL != driver->socket()) {
     epoll_ctl(m_epollFd, EPOLL_CTL_DEL, driver->socket()->SockNum(), NULL);
@@ -135,6 +135,6 @@ void InternetServer::KillSession(SessionDriver *driver) {
 }
 
 
-void InternetServer::AddTimerAction(DeltaQueueAction *action) {
+void InternetServer::addTimerAction(DeltaQueueAction *action) {
   m_timerQueue->insertNewAction(action);
 }

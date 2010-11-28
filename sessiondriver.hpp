@@ -23,7 +23,7 @@
 #include "internetsession.hpp"
 #include "insensitive.hpp"
 
-class InternetServer;
+class Server;
 class InternetSession;
 class ServerMaster;
 class Socket;
@@ -37,14 +37,14 @@ class Mutex;
 class SessionDriver
 {
 public:
-  SessionDriver(InternetServer *server, ServerMaster *master);
+  SessionDriver(Server *server, ServerMaster *master);
   ~SessionDriver();
   void DoWork(void);
   void NewSession(Socket *s);
   void DestroySession(void);
   const InternetSession *session(void) const { return m_session; }
   Socket *socket(void) const { return m_sock; }
-  InternetServer *server(void) const { return m_server; }
+  Server *server(void) const { return m_server; }
   ServerMaster *master(void) const { return m_master; }
   void Lock(void);
   void Unlock(void);
@@ -57,7 +57,7 @@ public:
 
 
 private:
-  InternetServer *m_server;
+  Server *m_server;
   Socket *m_sock;
   InternetSession *m_session;
   ServerMaster *m_master;

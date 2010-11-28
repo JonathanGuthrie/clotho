@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if !defined(_INTERNETSERVER_HPP_INCLUDED_)
-#define _INTERNETSERVER_HPP_INCLUDED_
+#if !defined(_SERVER_HPP_INCLUDED_)
+#define _SERVER_HPP_INCLUDED_
 
 /*
  * The InternetServer class is kind of the core of the C++ server library.  It opens a socket
@@ -43,7 +43,6 @@
 #include <netinet/in.h>
 
 #include "deltaqueueaction.hpp"
-#include "server.hpp"
 
 class SessionDriver;
 class ServerMaster;
@@ -55,31 +54,23 @@ class InternetSession;
 template <typename T>class ThreadPool;
 typedef ThreadPool<SessionDriver *> WorkerPool;
 
-class InternetServer : public Server {
+class ServerErrorException
+{
 public:
-  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_worker_threads = 10) throw(ServerErrorException);
-  virtual ~InternetServer();
-  virtual void Run();
-  virtual void Shutdown();
-  virtual void AddTimerAction(DeltaQueueAction *action);
-  virtual void WantsToReceive(const Socket *sock, SessionDriver *driver);
-  virtual void KillSession(SessionDriver *driver);
-
+  ServerErrorException(int error) : m_systemError(error) {}
 private:
-  bool m_isRunning;
-  Socket *m_listener;
-
-  static void *ListenerThreadFunction(void *);
-  static void *ReceiverThreadFunction(void *);
-  static void *TimerQueueFunction(void *);
-    
-  WorkerPool *m_pool;
-  pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;
-  std::set<SessionDriver *> m_sessions;
-  int m_epollFd;
-  ServerMaster *m_master;
-  DeltaQueue *m_timerQueue;
-  int m_workerCount;
+  int m_systemError;
 };
 
-#endif // _INTERNETSERVER_HPP_INCLUDED_
+class Server {
+public:
+  Server(void);
+  virtual ~Server();
+  virtual void Run(void) = 0;
+  virtual void Shutdown() = 0;
+  virtual void AddTimerAction(DeltaQueueAction *action) = 0;
+  virtual void WantsToReceive(const Socket *sock, SessionDriver *driver) = 0;
+  virtual void KillSession(SessionDriver *driver) = 0;
+};
+
+#endif // _SERVER_HPP_INCLUDED_

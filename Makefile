@@ -33,9 +33,11 @@ SOURCES=internetsession.cpp \
 	servermaster.cpp \
 	mutex.cpp \
 	cond.cpp \
-	thread.cpp
+	thread.cpp \
+	server.cpp \
+	testserver.cpp
 
-libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o thread.o
+libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o thread.o testserver.o server.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)

@@ -14,24 +14,11 @@
  * limitations under the License.
  */
 
-#if !defined(_SERVERMASTER_HPP_INCLUDED_)
-#define _SERVERMASTER_HPP_INCLUDED_
+#include "server.hpp"
 
-/*
- * Classes derived from this class allow for the configuration of Internet servers
- * without requiring that the InternetServer class know about what is required to 
- * configure each kind of server that might be implemented.
- */
+Server::Server(void) {
+}
 
-#include "internetsession.hpp"
 
-class Server;
-
-class ServerMaster {
-public:
-  ServerMaster(void);
-  virtual ~ServerMaster(void) = 0;
-  virtual InternetSession *NewSession(SessionDriver *driver, Server *server) = 0;
-};
-
-#endif //_SERVERMASTER_HPP_INCLUDED_
+Server::~Server(void) {
+}

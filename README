@@ -6,5 +6,6 @@ for spinning the thread of human life.  Appropriate for a threaded server
 library, eh? 
 
 Along with the library file, these header files are part of the deliverable:
-deltaqueueaction.hpp  internetserver.hpp   servermaster.hpp
-insensitive.hpp       internetsession.hpp  sessiondriver.hpp
+deltaqueueaction.hpp  internetsession.hpp  sessiondriver.hpp
+insensitive.hpp       server.hpp           socket.hpp
+internetserver.hpp    servermaster.hpp     testserver.hpp

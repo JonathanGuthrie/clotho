@@ -15,12 +15,12 @@
  */
 
 #include "sessiondriver.hpp"
-#include "internetserver.hpp"
+#include "server.hpp"
 #include "servermaster.hpp"
 #include "socket.hpp"
 #include "mutex.hpp"
 
-SessionDriver::SessionDriver(InternetServer *server, ServerMaster *master) : m_server(server), m_master(master) {
+SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_master(master) {
   m_sock = NULL;
   m_session = NULL;
   m_workMutex = new Mutex();

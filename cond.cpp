@@ -26,14 +26,14 @@ Cond::~Cond() {
   pthread_cond_destroy(&m_cond);
 }
 
-void Cond::Wait(Mutex *lockedMutex) {
+void Cond::wait(Mutex *lockedMutex) {
   pthread_cond_wait(&m_cond, lockedMutex->mutex());
 }
 
-void Cond::Signal() {
+void Cond::signal() {
   pthread_cond_signal(&m_cond);
 }
 
-void Cond::Broadcast() {
+void Cond::broadcast() {
   pthread_cond_broadcast(&m_cond);
 }

@@ -25,15 +25,14 @@
 
 #include "mutex.hpp"
 
-class Cond
-{
+class Cond {
 private:
   pthread_cond_t m_cond;
 
 public:
-  void Wait(Mutex *lockedMutex);
-  void Signal();
-  void Broadcast();
+  void wait(Mutex *lockedMutex);
+  void signal();
+  void broadcast();
   Cond();
   ~Cond();
 };

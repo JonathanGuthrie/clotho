@@ -84,7 +84,7 @@ void ThreadPool<T>::WorkerThread(void) {
   while(1) {
     m_pendingQueueMutex.Lock();
     if ((0 < m_queueHighwater) && (m_queueHighwater > m_pendingQueue.size())) {
-      m_highwaterCond.Broadcast();
+      m_highwaterCond.broadcast();
     }
 
     if (m_stopRunning) {
@@ -101,7 +101,7 @@ void ThreadPool<T>::WorkerThread(void) {
     else {
       work = NULL;
       // The wait unlocks m_pendingQueueMutex, and then locks it again when the condition happens
-      m_workersGo.Wait(&m_pendingQueueMutex);
+      m_workersGo.wait(&m_pendingQueueMutex);
       if (!m_pendingQueue.empty()) {
 	work = m_pendingQueue.front();
 	m_pendingQueue.pop();
@@ -136,8 +136,8 @@ ThreadPool<T>::~ThreadPool(void) {
   
   m_stopRunning = true;
   m_pendingQueueMutex.Unlock();
-  m_workersGo.Broadcast();
-  m_highwaterCond.Broadcast();
+  m_workersGo.broadcast();
+  m_highwaterCond.broadcast();
 
   // I need to wait for each thread because otherwise I don't know when I can clean up
   // Fortunately, the thread destructor does that.
@@ -162,10 +162,10 @@ void ThreadPool<T>::SendMessage(T message)
   m_pendingQueue.push(message);
   depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
-  m_workersGo.Signal();
+  m_workersGo.signal();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
     m_highwaterMutex.Lock();
-    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterCond.wait(&m_highwaterMutex);
     m_highwaterMutex.Unlock();
   }
 }
@@ -186,10 +186,10 @@ void ThreadPool<T>::SendMessages(Tqueue &messages) {
   }
   depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
-  m_workersGo.Broadcast();
+  m_workersGo.broadcast();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
     m_highwaterMutex.Lock();
-    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterCond.wait(&m_highwaterMutex);
     m_highwaterMutex.Unlock();
   }
 }
@@ -209,10 +209,10 @@ void ThreadPool<T>::SendMessages(Tlist &messages) {
   }
   depth = m_pendingQueue.size();
   m_pendingQueueMutex.Unlock();
-  m_workersGo.Broadcast();
+  m_workersGo.broadcast();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
     m_highwaterMutex.Lock();
-    m_highwaterCond.Wait(&m_highwaterMutex);
+    m_highwaterCond.wait(&m_highwaterMutex);
     m_highwaterMutex.Unlock();
   }
 }

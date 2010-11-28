@@ -22,12 +22,10 @@
  */
 #include <pthread.h>
 
-class ThreadException
-{
+class ThreadException {
 };
 
-class Thread
-{
+class Thread {
 private:
   pthread_t m_thread;
 

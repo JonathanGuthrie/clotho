@@ -24,6 +24,7 @@ TestServer::TestServer(ServerMaster *master) throw(ServerErrorException) : m_mas
 }
 
 TestServer::~TestServer() {
+  delete m_driver;
 }
 
 void TestServer::run(void) {
@@ -33,23 +34,19 @@ void TestServer::test(Socket *s) {
   m_keepRunning = true;
   m_wantsToReceive = false;
   m_actionQueueHead = NULL;
-  SessionDriver *driver = new SessionDriver(this, m_master);
-  driver->newSession(s);
+  m_driver = new SessionDriver(this, m_master);
+  m_driver->newSession(s);
   while (m_keepRunning) {
     m_keepRunning = false;
     if (m_wantsToReceive) {
       m_keepRunning = true;
       m_wantsToReceive = false;
-      driver->doWork();
+      m_driver->doWork();
     }
-    while (NULL != m_actionQueueHead) {
-      m_keepRunning = true;
-      DeltaQueueAction *temp;
-
-      temp = m_actionQueueHead;
-      m_actionQueueHead = m_actionQueueHead->m_next;
-      temp->handleTimeout(false);
-      delete temp;
+    // If it doesn't want to receive more data, then it's waiting for a timer to expire
+    // so run through the timer items until it does want to receive more data
+    while (!m_wantsToReceive) {
+      runTimer();
     }
   }
 }
@@ -72,4 +69,21 @@ void TestServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
 void TestServer::killSession(SessionDriver *driver) {
   // std::cout << "Called KillSession" << std::endl;
   m_keepRunning = false;
+}
+
+void TestServer::runTimer(void) {
+  // This runs all the actions once
+  DeltaQueueAction *p;
+
+  p = m_actionQueueHead;
+  m_actionQueueHead = NULL;
+  while (NULL != p) {
+    m_keepRunning = true;
+    DeltaQueueAction *temp;
+
+    temp = p;
+    p = p->m_next;
+    temp->handleTimeout(false);
+    delete temp;
+  }
 }

@@ -49,6 +49,8 @@ public:
   virtual void addTimerAction(DeltaQueueAction *action);
   virtual void wantsToReceive(const Socket *sock, SessionDriver *driver);
   virtual void killSession(SessionDriver *driver);
+  void runTimer(void);
+  bool queueEmpty(void) const { return NULL == m_actionQueueHead; }
 
 private:
   Socket *m_testSocket;
@@ -56,6 +58,7 @@ private:
   bool m_keepRunning;
   bool m_wantsToReceive;
   DeltaQueueAction *m_actionQueueHead;
+  SessionDriver *m_driver;
 };
 
 #endif // _TESTSERVER_HPP_INCLUDED_

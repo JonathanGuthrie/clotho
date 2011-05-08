@@ -20,8 +20,10 @@ done)  Eliminate the static array of sessions that worked for select, but isn't 
 
 10)  Push to GitHub
 
-11)  Add doxygen header blocks.
+11)  Deal with the case where the socket might block on transmit.  Includes defining a response class
 
-12)  Deal with the case where the socket might block on transmit
+12)  Add support for things like STARTTLS
 
-13) Unit tests?
+13)  Add doxygen header blocks.
+
+14) Unit tests?

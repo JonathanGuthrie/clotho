@@ -46,11 +46,9 @@ void SessionDriver::doWork(void) {
     m_session->receiveData(recvBuffer, numOctets);
     unlock();
   }
-#if 0
   else {
     m_server->killSession(this);
   }
-#endif // 0
 }
 
 

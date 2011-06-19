@@ -45,7 +45,7 @@ void TestServer::test(Socket *s) {
     }
     // If it doesn't want to receive more data, then it's waiting for a timer to expire
     // so run through the timer items until it does want to receive more data
-    while (!m_wantsToReceive) {
+    while (m_keepRunning && !m_wantsToReceive) {
       runTimer();
     }
   }
@@ -69,6 +69,7 @@ void TestServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
 void TestServer::killSession(SessionDriver *driver) {
   // std::cout << "Called KillSession" << std::endl;
   m_keepRunning = false;
+  driver->destroySession();
 }
 
 void TestServer::runTimer(void) {

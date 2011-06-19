@@ -21,6 +21,7 @@
 
 TestServer::TestServer(ServerMaster *master) throw(ServerErrorException) : m_master(master) {
   m_testSocket = NULL;
+  m_driver = NULL;
 }
 
 TestServer::~TestServer() {

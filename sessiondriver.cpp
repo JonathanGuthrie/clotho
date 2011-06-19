@@ -28,13 +28,12 @@ SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(se
 
 
 SessionDriver::~SessionDriver(void) {
-  if (NULL != m_sock) {
-    delete m_sock;
-  }
-  if (NULL != m_session) {
-    delete m_session;
-  }
+  delete m_sock;
+  m_sock = NULL;
+  delete m_session;
+  m_session = NULL;
   delete m_workMutex;
+  m_workMutex = NULL;
 }
 
 
@@ -47,9 +46,11 @@ void SessionDriver::doWork(void) {
     m_session->receiveData(recvBuffer, numOctets);
     unlock();
   }
+#if 0
   else {
     m_server->killSession(this);
   }
+#endif // 0
 }
 
 
@@ -76,9 +77,13 @@ void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
 }
 
 void SessionDriver::lock(void) {
-  m_workMutex->lock();
+  if (NULL != m_workMutex) {
+    m_workMutex->lock();
+  }
 }
 
 void SessionDriver::unlock(void) {
-  m_workMutex->unlock();
+  if (NULL != m_workMutex) {
+    m_workMutex->unlock();
+  }
 }

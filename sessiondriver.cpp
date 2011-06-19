@@ -20,9 +20,7 @@
 #include "socket.hpp"
 #include "mutex.hpp"
 
-SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_master(master) {
-  m_sock = NULL;
-  m_session = NULL;
+SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master) {
   m_workMutex = new Mutex();
 }
 

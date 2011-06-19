@@ -67,7 +67,15 @@ void InternetServer::shutdown() {
 
     for (std::set<SessionDriver *>::iterator i=m_sessions.begin(); i!=m_sessions.end(); ++i) {
       killSession(*i);
+      delete *i;
     }
+
+    while (0 != m_sessionCache.size()) {
+      SessionDriver *session = m_sessionCache.front();
+      m_sessionCache.pop_front();
+      delete session;
+    }
+
     delete m_pool;
   }
 }
@@ -77,7 +85,14 @@ void *InternetServer::listenerThreadFunction(void *d) {
   InternetServer *t = (InternetServer *)d;
   while(t->m_isRunning) {
     Socket *worker = t->m_listener->accept();
-    SessionDriver *session = new SessionDriver(t, t->m_master);
+    SessionDriver *session = NULL;
+    if (0 == t->m_sessionCache.size()) {
+      session = new SessionDriver(t, t->m_master);
+    }
+    else {
+      session = t->m_sessionCache.front();
+      t->m_sessionCache.pop_front();
+    }
     t->m_sessions.insert(session);
     struct epoll_event event;
     event.events = 0;
@@ -131,7 +146,7 @@ void InternetServer::killSession(SessionDriver *driver) {
   }
   driver->destroySession();
   m_sessions.erase(driver);
-  delete driver;
+  m_sessionCache.push_back(driver);
 }
 
 

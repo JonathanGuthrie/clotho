@@ -38,6 +38,7 @@
 
 #include <string>
 #include <set>
+#include <list>
 
 #include <stdint.h>
 #include <netinet/in.h>
@@ -76,6 +77,7 @@ private:
   WorkerPool *m_pool;
   pthread_t m_listenerThread, m_receiverThread, m_timerQueueThread;
   std::set<SessionDriver *> m_sessions;
+  std::list<SessionDriver *> m_sessionCache;
   int m_epollFd;
   ServerMaster *m_master;
   DeltaQueue *m_timerQueue;

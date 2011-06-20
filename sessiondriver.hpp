@@ -22,6 +22,7 @@
 
 #include "internetsession.hpp"
 #include "insensitive.hpp"
+// #include "datasource.hpp"
 
 class Server;
 class InternetSession;
@@ -53,7 +54,9 @@ public:
   void wantsToSend(const char *buffer, size_t length) const { wantsToSend((uint8_t *)buffer, length); }
   void wantsToSend(const char *buffer) const { wantsToSend((uint8_t *)buffer, strlen(buffer)); }
   void wantsToSend(const uint8_t *buffer, size_t length) const;
-
+  // As soon as the DataSource class's fetch method returns 0, the destructor
+  // for the passed pointer will be called
+  // void wantsToSend(DataSource *source);
 
 private:
   Server *m_server;

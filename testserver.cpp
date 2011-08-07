@@ -35,6 +35,7 @@ void TestServer::test(Socket *s) {
   m_keepRunning = true;
   m_wantsToReceive = false;
   m_actionQueueHead = NULL;
+  delete m_driver;
   m_driver = new SessionDriver(this, m_master);
   m_driver->newSession(s);
   while (m_keepRunning) {

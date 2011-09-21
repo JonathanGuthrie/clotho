@@ -50,6 +50,7 @@ void TestServer::test(Socket *s) {
       runTimer();
     }
   }
+  delete m_driver;
 }
 
 void TestServer::shutdown() {

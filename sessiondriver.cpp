@@ -72,6 +72,16 @@ void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
   m_sock->send(buffer, length);
 }
 
+#if 0
+void SessionDriver::wantsToSend(DataSource *source) {
+  m_source = source;
+  // I need to think about how to implement this.  Each socket seems to need a
+  // buffer, but I don't necessarily get who manages that buffer.
+  m_sock->send()
+  // SYZYGY
+}
+#endif // 0
+
 void SessionDriver::lock(void) {
   if (NULL != m_workMutex) {
     m_workMutex->lock();

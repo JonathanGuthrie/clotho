@@ -25,6 +25,7 @@ CXXFLAGS=-g -Wall -fPIC
 LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libclotho.so.1
 
 SOURCES=internetsession.cpp \
+	datasource.cpp \
 	socket.cpp \
 	internetserver.cpp \
 	deltaqueue.cpp \

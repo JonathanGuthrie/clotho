@@ -20,6 +20,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <boost/thread.hpp>
+
 #include "internetsession.hpp"
 #include "insensitive.hpp"
 #include "datasource.hpp"
@@ -28,7 +30,6 @@ class Server;
 class InternetSession;
 class ServerMaster;
 class Socket;
-class Mutex;
 
 // The SessionDriver class sits between the server, which does the listening
 // for more data, and the InternetSession, which does all the processing of the
@@ -63,7 +64,7 @@ private:
   Socket *m_sock;
   InternetSession *m_session;
   ServerMaster *m_master;
-  Mutex *m_workMutex;
+  boost::mutex *m_workMutex;
 };
 
 #endif //_SESSIONDRIVER_HPP_INCLUDED_

@@ -22,7 +22,7 @@ CXXFLAGS=-g -Wall -fPIC
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : Makefile ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lpthread -lcrypt -shared -Wl,-soname,libclotho.so.1
+LDFLAGS=-lboost_thread -lcrypt -shared -Wl,-soname,libclotho.so.1
 
 SOURCES=internetsession.cpp \
 	datasource.cpp \
@@ -32,13 +32,10 @@ SOURCES=internetsession.cpp \
 	deltaqueueaction.cpp \
 	sessiondriver.cpp \
 	servermaster.cpp \
-	mutex.cpp \
-	cond.cpp \
-	thread.cpp \
 	server.cpp \
 	testserver.cpp
 
-libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o mutex.o cond.o thread.o testserver.o server.o
+libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o testserver.o server.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)

@@ -37,9 +37,7 @@
 #include <queue>
 #include <list>
 
-#include "mutex.hpp"
-#include "cond.hpp"
-#include "thread.hpp"
+#include <boost/thread.hpp>
 
 // class MessageType must have a method called "void DoWork(void)"
 template <typename T>
@@ -59,14 +57,16 @@ private:
   void workerThread(void);
   static void *ThreadFunction(void*);
 
-  Cond m_workersGo;
+  boost::condition_variable m_workersGo;
   bool m_stopRunning;
   int m_workerThreadCount;
-  Mutex m_pendingQueueMutex;
+  boost::mutex m_pendingQueueMutex;
+  boost::unique_lock<boost::mutex> m_pendingQueueLock;
   Tqueue m_pendingQueue;
-  Mutex m_highwaterMutex;
-  Cond m_highwaterCond;
-  Thread **m_workerThreads;
+  boost::mutex m_highwaterMutex;
+  boost::unique_lock<boost::mutex> m_highwaterLock;
+  boost::condition_variable m_highwaterCond;
+  boost::thread **m_workerThreads;
   const typename ThreadPool<T>::Tqueue::size_type m_queueHighwater;
 };
 
@@ -82,13 +82,13 @@ template <typename T>
 void ThreadPool<T>::workerThread(void) {
   // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
   while(1) {
-    m_pendingQueueMutex.lock();
+    m_pendingQueueLock.lock();
     if ((0 < m_queueHighwater) && (m_queueHighwater > m_pendingQueue.size())) {
-      m_highwaterCond.broadcast();
+      m_highwaterCond.notify_all();
     }
 
     if (m_stopRunning) {
-      m_pendingQueueMutex.unlock();
+      m_pendingQueueLock.unlock();
       break;
     }
 
@@ -96,17 +96,17 @@ void ThreadPool<T>::workerThread(void) {
     if (!m_pendingQueue.empty()) {
       work = m_pendingQueue.front();
       m_pendingQueue.pop();
-      m_pendingQueueMutex.unlock();
+      m_pendingQueueLock.unlock();
     }
     else {
       work = NULL;
-      // The wait unlocks m_pendingQueueMutex, and then locks it again when the condition happens
-      m_workersGo.wait(&m_pendingQueueMutex);
+      // The wait unlocks m_pendingQueueLock, and then locks it again when the condition happens
+      m_workersGo.wait(m_pendingQueueLock);
       if (!m_pendingQueue.empty()) {
 	work = m_pendingQueue.front();
 	m_pendingQueue.pop();
       }
-      m_pendingQueueMutex.unlock();
+      m_pendingQueueLock.unlock();
     }
     if (NULL != work) {
       work->doWork();
@@ -116,28 +116,27 @@ void ThreadPool<T>::workerThread(void) {
 
 
 template <typename T>
-ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_type queue_highwater) : m_queueHighwater(queue_highwater) {
+ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_type queue_highwater) : m_pendingQueueLock(m_pendingQueueMutex),m_highwaterLock(m_highwaterMutex),m_queueHighwater(queue_highwater) {
   m_workerThreadCount = numThreads;
   m_stopRunning = false;
 
-  m_workerThreads = new Thread*[m_workerThreadCount];
+  m_workerThreads = new boost::thread*[m_workerThreadCount];
 
-  m_pendingQueueMutex.lock();
   for (int i=0; i<m_workerThreadCount; ++i) {
-    m_workerThreads[i] = new Thread(ThreadFunction, this);
+    m_workerThreads[i] = new boost::thread(ThreadFunction, this);
   }
-  m_pendingQueueMutex.unlock();
+  m_pendingQueueLock.unlock();
 }
 
 
 template <typename T>
 ThreadPool<T>::~ThreadPool(void) {
-  m_pendingQueueMutex.lock();
+  m_pendingQueueLock.lock();
   
   m_stopRunning = true;
-  m_pendingQueueMutex.unlock();
-  m_workersGo.broadcast();
-  m_highwaterCond.broadcast();
+  m_pendingQueueLock.unlock();
+  m_workersGo.notify_all();
+  m_highwaterCond.notify_all();
 
   // I need to wait for each thread because otherwise I don't know when I can clean up
   // Fortunately, the thread destructor does that.
@@ -158,15 +157,15 @@ void ThreadPool<T>::sendMessage(T message)
 {
   typename ThreadPool<T>::Tqueue::size_type depth;
   
-  m_pendingQueueMutex.lock();
+  m_pendingQueueLock.lock();
   m_pendingQueue.push(message);
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.unlock();
-  m_workersGo.signal();
+  m_pendingQueueLock.unlock();
+  m_workersGo.notify_one();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.lock();
-    m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.unlock();
+    m_highwaterLock.lock();
+    m_highwaterCond.wait(m_highwaterLock);
+    m_highwaterLock.unlock();
   }
 }
 
@@ -179,18 +178,18 @@ template <typename T>
 void ThreadPool<T>::sendMessages(Tqueue &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
 
-  m_pendingQueueMutex.lock();
+  m_pendingQueueLock.lock();
   while (!messages.empty()) {
     m_pendingQueue.push(messages.front());
     messages.pop();
   }
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.unlock();
-  m_workersGo.broadcast();
+  m_pendingQueueLock.unlock();
+  m_workersGo.notify_all();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.lock();
-    m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.unlock();
+    m_highwaterLock.lock();
+    m_highwaterCond.wait(m_highwaterLock);
+    m_highwaterLock.unlock();
   }
 }
 
@@ -202,18 +201,18 @@ void ThreadPool<T>::sendMessages(Tqueue &messages) {
 template <typename T>
 void ThreadPool<T>::sendMessages(Tlist &messages) {
   typename ThreadPool<T>::Tqueue::size_type depth;
-  m_pendingQueueMutex.lock();
+  m_pendingQueueLock.lock();
   
   for (typename ThreadPool<T>::Tlist::iterator i=messages.begin(); i!=messages.end(); ++i) {
     m_pendingQueue.push(*i);
   }
   depth = m_pendingQueue.size();
-  m_pendingQueueMutex.unlock();
-  m_workersGo.broadcast();
+  m_pendingQueueLock.unlock();
+  m_workersGo.notify_all();
   if ((0 < m_queueHighwater) && (m_queueHighwater < depth)) {
-    m_highwaterMutex.lock();
-    m_highwaterCond.wait(&m_highwaterMutex);
-    m_highwaterMutex.unlock();
+    m_highwaterLock.lock();
+    m_highwaterCond.wait(m_highwaterLock);
+    m_highwaterLock.unlock();
   }
 }
 

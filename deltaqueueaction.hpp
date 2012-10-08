@@ -35,6 +35,7 @@ public:
    * asynchronous action.
    */
   DeltaQueueAction(int delta, InternetSession *session);
+  virtual ~DeltaQueueAction();
   class DeltaQueueAction *m_next;
   /*
    * HandleTimeout is where the work happens.  Obviously, you must derive a subclass to do anything with 

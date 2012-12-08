@@ -26,4 +26,6 @@ done)  Eliminate the static array of sessions that worked for select, but isn't 
 
 13)  Add doxygen header blocks.
 
-14) Unit tests?
+14) Unit tests
+
+done)  Change to use boost instead of pthread

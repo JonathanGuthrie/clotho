@@ -89,6 +89,7 @@ void ThreadPool<T>::workerThread(void) {
 
     if (m_stopRunning) {
       m_pendingQueueLock.unlock();
+      m_workersGo.notify_all();
       break;
     }
 
@@ -139,8 +140,8 @@ ThreadPool<T>::~ThreadPool(void) {
   m_highwaterCond.notify_all();
 
   // I need to wait for each thread because otherwise I don't know when I can clean up
-  // Fortunately, the thread destructor does that.
   for (int i=0; i<m_workerThreadCount; ++i) {
+    m_workerThreads[i]->join();
     delete m_workerThreads[i];
   }
   delete[] m_workerThreads;

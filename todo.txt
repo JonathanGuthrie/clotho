@@ -18,11 +18,11 @@ done)  Put the high water marks back in ThreadPool.hpp
 
 done)  Eliminate the static array of sessions that worked for select, but isn't appropriate for epoll
 
-10)  Push to GitHub
+done)  Push to GitHub
 
 11)  Deal with the case where the socket might block on transmit.  Includes defining a response class
 
-12)  Add support for things like STARTTLS
+12)  Add support for things like STARTTLS and sockets that are encrypted from the beginning.
 
 13)  Add doxygen header blocks.
 

@@ -25,7 +25,6 @@
 #include "socket.hpp"
 
 #include "ThreadPool.hpp"
-typedef ThreadPool<SessionDriver *> WorkerPool;
 
 InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
   m_timerQueue = new DeltaQueue;

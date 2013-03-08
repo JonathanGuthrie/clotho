@@ -3,12 +3,9 @@
 
 class DataSource {
 private:
-  uint8_t *m_buffer;
-  size_t m_startOffset;
-  size_t m_bufferLen;
 
 public:
-  void DataSource(uint8_t *buffer, size_t length);
+  DataSource(void);
   virtual ~DataSource();
 
   // This is passed a buffer of size length and returns the number of

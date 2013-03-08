@@ -50,7 +50,6 @@ class SessionDriver;
 class ServerMaster;
 class DeltaQueue;
 class Socket;
-class Mutex;
 class InternetSession;
 
 template <typename T>class ThreadPool;

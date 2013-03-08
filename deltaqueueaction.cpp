@@ -20,3 +20,5 @@
 
 DeltaQueueAction::DeltaQueueAction(int delta, InternetSession *session) : m_next(NULL), m_delta(delta), m_session(session) {
 }
+
+DeltaQueueAction::~DeltaQueueAction() {}

@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <string.h>
+#include <unistd.h>
 
 Socket::Socket(int socket, struct sockaddr_in address) {
   this->m_sock = socket;
@@ -62,6 +63,7 @@ Socket *Socket::accept(void) {
   address_len = sizeof(temp);
   temp_socket = ::accept(m_sock, (struct sockaddr *)&temp, &address_len);
   int reuse_flag = 1;
+  (void) reuse_flag;
   return new Socket(temp_socket, temp);
 }
 

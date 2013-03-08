@@ -24,7 +24,7 @@
  */
 
 #include "deltaqueueaction.hpp"
-#include "mutex.hpp"
+#include "boost/thread.hpp"
 
 #include <string>
 
@@ -38,7 +38,7 @@ public:
   void purgeSession(const SessionDriver *driver);
 
 private:
-  Mutex m_queueMutex;
+  boost::mutex m_queueMutex;
   DeltaQueueAction *m_queueHead;
 };
 

@@ -20,15 +20,16 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <boost/thread.hpp>
+
 #include "internetsession.hpp"
 #include "insensitive.hpp"
-// #include "datasource.hpp"
+#include "datasource.hpp"
 
 class Server;
 class InternetSession;
 class ServerMaster;
 class Socket;
-class Mutex;
 
 // The SessionDriver class sits between the server, which does the listening
 // for more data, and the InternetSession, which does all the processing of the
@@ -56,14 +57,14 @@ public:
   void wantsToSend(const uint8_t *buffer, size_t length) const;
   // As soon as the DataSource class's fetch method returns 0, the destructor
   // for the passed pointer will be called
-  // void wantsToSend(DataSource *source);
+  void wantsToSend(DataSource *source);
 
 private:
   Server *m_server;
   Socket *m_sock;
   InternetSession *m_session;
   ServerMaster *m_master;
-  Mutex *m_workMutex;
+  boost::mutex *m_workMutex;
 };
 
 #endif //_SESSIONDRIVER_HPP_INCLUDED_

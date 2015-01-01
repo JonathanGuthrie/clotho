@@ -81,14 +81,16 @@ void *ThreadPool<T>::ThreadFunction(void *instance_pointer) {
 template <typename T>
 void ThreadPool<T>::workerThread(void) {
   // std::cout << "In the worker thread method, I've got a listener for thread " << std::endl;
+  boost::unique_lock<boost::mutex> pendingQueueLock(m_pendingQueueMutex);
+  pendingQueueLock.unlock();
   while(1) {
-    m_pendingQueueLock.lock();
+    pendingQueueLock.lock();
     if ((0 < m_queueHighwater) && (m_queueHighwater > m_pendingQueue.size())) {
       m_highwaterCond.notify_all();
     }
 
     if (m_stopRunning) {
-      m_pendingQueueLock.unlock();
+      pendingQueueLock.unlock();
       m_workersGo.notify_all();
       break;
     }
@@ -97,17 +99,17 @@ void ThreadPool<T>::workerThread(void) {
     if (!m_pendingQueue.empty()) {
       work = m_pendingQueue.front();
       m_pendingQueue.pop();
-      m_pendingQueueLock.unlock();
+      pendingQueueLock.unlock();
     }
     else {
       work = NULL;
-      // The wait unlocks m_pendingQueueLock, and then locks it again when the condition happens
-      m_workersGo.wait(m_pendingQueueLock);
+      // The wait unlocks pendingQueueLock, and then locks it again when the condition happens
+      m_workersGo.wait(pendingQueueLock);
       if (!m_pendingQueue.empty()) {
 	work = m_pendingQueue.front();
 	m_pendingQueue.pop();
       }
-      m_pendingQueueLock.unlock();
+      pendingQueueLock.unlock();
     }
     if (NULL != work) {
       work->doWork();
@@ -126,6 +128,7 @@ ThreadPool<T>::ThreadPool(int numThreads, typename ThreadPool<T>::Tqueue::size_t
   for (int i=0; i<m_workerThreadCount; ++i) {
     m_workerThreads[i] = new boost::thread(ThreadFunction, this);
   }
+
   m_pendingQueueLock.unlock();
 }
 
@@ -157,7 +160,7 @@ template <typename T>
 void ThreadPool<T>::sendMessage(T message)
 {
   typename ThreadPool<T>::Tqueue::size_type depth;
-  
+
   m_pendingQueueLock.lock();
   m_pendingQueue.push(message);
   depth = m_pendingQueue.size();

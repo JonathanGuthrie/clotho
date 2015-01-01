@@ -22,7 +22,7 @@ CXXFLAGS=-g -Wall -I..
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lcrypt -lclotho
+LDFLAGS=-lcrypt -lclotho -lgnutls
 
 SOURCES=echod.cpp \
 	echomaster.cpp \

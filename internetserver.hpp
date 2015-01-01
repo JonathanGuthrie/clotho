@@ -58,6 +58,7 @@ typedef ThreadPool<SessionDriver *> WorkerPool;
 class InternetServer : public Server {
 public:
   InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_worker_threads = 10) throw(ServerErrorException);
+  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_worker_threads = 10) throw(ServerErrorException);
   virtual ~InternetServer();
   virtual void run();
   virtual void shutdown();

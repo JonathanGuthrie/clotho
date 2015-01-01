@@ -24,6 +24,12 @@ done)  Push to GitHub
 
 12)  Add support for things like STARTTLS and sockets that are encrypted from the beginning.
 
+TLS requires additional configuration parameters.  To begin with, I'm going to require X.509 authentication and allow for "OCSP stapling" (whatever that is) and for that, I need a key file, a certificate file, a CA file, and a CRL file.  The "OCSP stapling" (whatever that is) requires an OCSP status file.
+
+Need to recalculate the diffie-hellman params
+
+Need to replace the constant "1024" in the diffie-hellman bits with a better value, once I have a more up to date version of the library
+
 13)  Add doxygen header blocks.
 
 14) Unit tests

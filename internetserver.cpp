@@ -36,6 +36,16 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
 }
 
 
+InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_workers) throw(ServerErrorException) {
+  m_timerQueue = new DeltaQueue;
+  m_workerCount = num_workers;
+  m_master = master;
+  m_isRunning = true;
+  m_listener = new Socket(bind_address, bind_port, keyfile, certfile, cafile, crlfile);
+  m_epollFd = epoll_create1(EPOLL_CLOEXEC);
+}
+
+
 InternetServer::~InternetServer() {
   shutdown();
   delete m_timerQueue;

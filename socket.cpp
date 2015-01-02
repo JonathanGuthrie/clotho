@@ -22,7 +22,11 @@
 #include <unistd.h>
 #include <string.h>
 
-Socket::Socket(int socket, struct sockaddr_in address) {
+Socket::Socket(int socket, struct sockaddr_in address)  {
+  m_tlsSession = NULL;
+  m_x509Credentials = NULL;
+  m_priorityCache = NULL;
+  m_dhParams = NULL;
   this->m_sock = socket;
   this->m_address = address;
   this->m_isEncrypted = false;
@@ -31,6 +35,10 @@ Socket::Socket(int socket, struct sockaddr_in address) {
 }
 
 Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(SocketSocketErrorException, SocketBindErrorException) {
+  m_tlsSession = NULL;
+  m_x509Credentials = NULL;
+  m_priorityCache = NULL;
+  m_dhParams = NULL;
   try {
     if (0 < (m_sock = socket(AF_INET, SOCK_STREAM, 0))) {
       int reuse_flag = 1;
@@ -60,6 +68,15 @@ Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(Socket
 
 
 Socket::Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog) throw(SocketSocketErrorException, SocketBindErrorException) {
+  m_keyfile = keyfile;
+  m_certfile = certfile;
+  m_cafile = cafile;
+  m_crlfile = crlfile;
+  m_tlsSession = NULL;
+  m_x509Credentials = NULL;
+  m_priorityCache = NULL;
+  m_dhParams = NULL;
+
   try {
     if (0 < (m_sock = socket(AF_INET, SOCK_STREAM, 0))) {
       int reuse_flag = 1;
@@ -84,8 +101,7 @@ Socket::Socket(uint32_t bind_address, short bind_port, const std::string &keyfil
     close(m_sock);
     throw;
   }
-  this->m_isEncrypted = false;
-  startTls(keyfile, certfile, cafile, crlfile);
+  this->m_isEncrypted = true;
 }
 
 
@@ -107,7 +123,20 @@ Socket *Socket::accept(void) throw(TlsException) {
 
 
 Socket::~Socket() {
+  if (NULL != m_tlsSession) {
+    gnutls_bye(m_tlsSession, GNUTLS_SHUT_WR);
+  }
   close(m_sock);
+  if (NULL != m_tlsSession) {
+    gnutls_deinit(m_tlsSession);
+  }
+  if (NULL != m_x509Credentials) {
+    gnutls_certificate_free_credentials(m_x509Credentials);
+  }
+  if (NULL != m_priorityCache) {
+    gnutls_priority_deinit(m_priorityCache);
+  }
+  gnutls_global_deinit();
 }
 
 ssize_t Socket::send(const uint8_t *data, size_t length) {
@@ -135,11 +164,16 @@ ssize_t Socket::tls_receive(uint8_t *buffer, size_t size) {
 
   do {
     ret = ::gnutls_record_recv(m_tlsSession, buffer, size);
-  } while ((0 < ret) || (0 == gnutls_error_is_fatal(ret)));
+  } while ((0 > ret) && (0 == gnutls_error_is_fatal(ret)));
   return ret;
 }
 
 bool Socket::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException) {
+  m_keyfile = keyfile;
+  m_certfile = certfile;
+  m_cafile = cafile;
+  m_crlfile = crlfile;
+
   gnutls_global_init();
 
   gnutls_certificate_allocate_credentials(&m_x509Credentials);

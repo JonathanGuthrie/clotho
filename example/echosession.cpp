@@ -52,7 +52,8 @@ void EchoSession::receiveData(uint8_t *buffer, size_t length) {
   // processing.  If I don't have a request, then I accumulate a line and use it to create a
   // request.
   m_driver->wantsToSend(buffer, length);
-  if (0 == strncmp((const char *)buffer, "quit\r\n", length)) {
+  if ((0 == strncmp((const char *)buffer, "quit\r\n", length)) ||
+      (0 == strncmp((const char *)buffer, "quit\n", length))) {
     m_driver->server()->killSession(m_driver);
   }
   else {

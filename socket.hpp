@@ -46,10 +46,10 @@ private:
   bool m_isEncrypted;
   struct sockaddr_in m_address; // Todo:  Convert to IPv6
   // TLS variables
-  const std::string m_keyfile;
-  const std::string m_certfile;
-  const std::string m_cafile;
-  const std::string m_crlfile;
+  std::string m_keyfile;
+  std::string m_certfile;
+  std::string m_cafile;
+  std::string m_crlfile;
   gnutls_dh_params_t m_dhParams;
   gnutls_certificate_credentials_t m_x509Credentials;
   gnutls_priority_t m_priorityCache;

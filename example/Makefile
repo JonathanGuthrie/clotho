@@ -25,15 +25,22 @@ CXXFLAGS=-g -Wall -I..
 LDFLAGS=-lcrypt -lclotho -lgnutls
 
 SOURCES=echod.cpp \
+	echods.cpp \
 	echomaster.cpp \
 	echosession.cpp \
 	idletimer.cpp
 
+BINARIES: echod echods
+
 echod: echod.o echomaster.o echosession.o idletimer.o
+
+echods: echods.o echomaster.o echosession.o idletimer.o
 
 include $(SOURCES:.cpp=.d)
 
 echod.o:  Makefile
+
+echods.o:  Makefile
 
 echomaster.o: Makefile
 

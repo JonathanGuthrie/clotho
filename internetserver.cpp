@@ -79,12 +79,6 @@ void InternetServer::shutdown() {
       delete *i;
     }
 
-    while (0 != m_sessionCache.size()) {
-      SessionDriver *session = m_sessionCache.front();
-      m_sessionCache.pop_front();
-      delete session;
-    }
-
     delete m_pool;
   }
 }

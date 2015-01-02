@@ -71,6 +71,18 @@ void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
   m_sock->send(buffer, length);
 }
 
+void SessionDriver::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) {
+  try {
+    m_sock->startTls(keyfile, certfile, cafile, crlfile);
+  } catch(TlsException e) {
+    // TODO:  Log the exception
+  }
+}
+
+bool SessionDriver::connectionIsEncrypted(void) const {
+  return m_sock->isEncrypted();
+}
+
 #if 0
 void SessionDriver::wantsToSend(DataSource *source) {
   m_source = source;

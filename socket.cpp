@@ -168,48 +168,50 @@ ssize_t Socket::tls_receive(uint8_t *buffer, size_t size) {
   return ret;
 }
 
-bool Socket::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException) {
-  m_keyfile = keyfile;
-  m_certfile = certfile;
-  m_cafile = cafile;
-  m_crlfile = crlfile;
+int Socket::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException) {
+  int ret = -1;
+  if (!this->m_isEncrypted) {
+    m_keyfile = keyfile;
+    m_certfile = certfile;
+    m_cafile = cafile;
+    m_crlfile = crlfile;
 
-  gnutls_global_init();
+    gnutls_global_init();
 
-  gnutls_certificate_allocate_credentials(&m_x509Credentials);
-  gnutls_certificate_set_x509_trust_file(m_x509Credentials, m_cafile.c_str(), GNUTLS_X509_FMT_PEM);
-  gnutls_certificate_set_x509_crl_file(m_x509Credentials, m_crlfile.c_str(), GNUTLS_X509_FMT_PEM);
-  if (0 > gnutls_certificate_set_x509_key_file(m_x509Credentials, m_certfile.c_str(), m_keyfile.c_str(), GNUTLS_X509_FMT_PEM)) {
-    throw TlsException("Unable to open key file");
+    gnutls_certificate_allocate_credentials(&m_x509Credentials);
+    gnutls_certificate_set_x509_trust_file(m_x509Credentials, m_cafile.c_str(), GNUTLS_X509_FMT_PEM);
+    gnutls_certificate_set_x509_crl_file(m_x509Credentials, m_crlfile.c_str(), GNUTLS_X509_FMT_PEM);
+    if (0 > gnutls_certificate_set_x509_key_file(m_x509Credentials, m_certfile.c_str(), m_keyfile.c_str(), GNUTLS_X509_FMT_PEM)) {
+      throw TlsException("Unable to open key file");
+    }
+
+    gnutls_dh_params_init(&m_dhParams);
+    gnutls_dh_params_generate2(m_dhParams, 1024);
+
+    gnutls_priority_init(&m_priorityCache, "NORMAL", NULL);
+    gnutls_certificate_set_dh_params(m_x509Credentials, m_dhParams);
+
+    gnutls_init(&m_tlsSession, GNUTLS_SERVER);
+    gnutls_priority_set(m_tlsSession, m_priorityCache);
+    gnutls_credentials_set(m_tlsSession, GNUTLS_CRD_CERTIFICATE, m_x509Credentials);
+
+    gnutls_certificate_server_set_request(m_tlsSession, GNUTLS_CERT_IGNORE);
+    gnutls_transport_set_ptr(m_tlsSession, (gnutls_transport_ptr_t) m_sock);
+
+    do {
+      ret = gnutls_handshake(m_tlsSession);
+    } while ((0 > ret) && (0 == gnutls_error_is_fatal(ret)));
+
+    if (ret < 0) {
+      gnutls_deinit(m_tlsSession);
+      throw TlsException("TLS Handshake Failed");
+    }
+
+    // At this point, we're sending and receiving TLS
+    m_receive = &Socket::tls_receive;
+    m_send = &Socket::tls_send;
+
+    this->m_isEncrypted = true;
   }
-
-  gnutls_dh_params_init(&m_dhParams);
-  gnutls_dh_params_generate2(m_dhParams, 1024);
-
-  gnutls_priority_init(&m_priorityCache, "NORMAL", NULL);
-  gnutls_certificate_set_dh_params(m_x509Credentials, m_dhParams);
-
-  gnutls_init(&m_tlsSession, GNUTLS_SERVER);
-  gnutls_priority_set(m_tlsSession, m_priorityCache);
-  gnutls_credentials_set(m_tlsSession, GNUTLS_CRD_CERTIFICATE, m_x509Credentials);
-
-  gnutls_certificate_server_set_request(m_tlsSession, GNUTLS_CERT_IGNORE);
-  gnutls_transport_set_ptr(m_tlsSession, (gnutls_transport_ptr_t) m_sock);
-
-  int ret;
-  do {
-    ret = gnutls_handshake(m_tlsSession);
-  } while ((0 > ret) && (0 == gnutls_error_is_fatal(ret)));
-
-  if (ret < 0) {
-    gnutls_deinit(m_tlsSession);
-    throw TlsException("TLS Handshake Failed");
-  }
-
-  // At this point, we're sending and receiving TLS
-  m_receive = &Socket::tls_receive;
-  m_send = &Socket::tls_send;
-
-  this->m_isEncrypted = true;
   return ret;
 }

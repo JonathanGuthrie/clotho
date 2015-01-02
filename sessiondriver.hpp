@@ -58,6 +58,8 @@ public:
   // As soon as the DataSource class's fetch method returns 0, the destructor
   // for the passed pointer will be called
   void wantsToSend(DataSource *source);
+  void startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile);
+  bool connectionIsEncrypted(void) const;
 
 private:
   Server *m_server;

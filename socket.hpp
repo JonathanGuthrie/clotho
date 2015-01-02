@@ -73,7 +73,7 @@ public:
   Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog = 16384) throw(SocketSocketErrorException, SocketBindErrorException);
   Socket *accept(void) throw(TlsException);
 
-  bool startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException);
+  int startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException);
   
   ~Socket();
 

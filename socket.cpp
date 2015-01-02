@@ -126,10 +126,10 @@ Socket::~Socket() {
   if (NULL != m_tlsSession) {
     gnutls_bye(m_tlsSession, GNUTLS_SHUT_WR);
   }
-  close(m_sock);
   if (NULL != m_tlsSession) {
     gnutls_deinit(m_tlsSession);
   }
+  close(m_sock);
   if (NULL != m_x509Credentials) {
     gnutls_certificate_free_credentials(m_x509Credentials);
   }

@@ -24,10 +24,10 @@
 
 #define PORT 8181
 
-#define KEYFILE "/home/jguthrie/src/clotho/example/chromite-priv.pem"
-#define CERTFILE "/home/jguthrie/src/clotho/example/chromite-cert.pem"
-#define CAFILE "/home/jguthrie/src/clotho/example/chromite-cert.pem"
-#define CRLFILE "/home/jguthrie/src/clotho/example/chromite-crl.pem"
+#define KEYFILE "./test-priv.pem"
+#define CERTFILE "./test-cert.pem"
+#define CAFILE "./test-cert.pem"
+#define CRLFILE "./test-crl.pem"
 
 int main(int argc, char **argv) {
   EchoMaster master(10); // Idle timeout in seconds

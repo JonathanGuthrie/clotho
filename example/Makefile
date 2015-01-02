@@ -49,5 +49,5 @@ echosession.o: Makefile
 idletimer.o: Makefile
 
 clean:
-	rm -f *.o *.d echod
+	rm -f *.o *.d echod echods
 

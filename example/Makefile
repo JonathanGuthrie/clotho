@@ -14,7 +14,7 @@
 # limitations under the License.
 
 CC=g++
-CXXFLAGS=-g -Wall -I..
+CXXFLAGS=-g -Wall -I.. -fcoroutines
 
 %.d: %.cpp
 	@set -e; rm -f $@; \
@@ -22,7 +22,8 @@ CXXFLAGS=-g -Wall -I..
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lcrypt -lclotho -lgnutls
+LDFLAGS= -L..
+LDLIBS+=-lclotho -lboost_thread -lcrypt -lgnutls
 
 SOURCES=echod.cpp \
 	echods.cpp \

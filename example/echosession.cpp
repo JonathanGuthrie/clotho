@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Jonathan R. Guthrie
+ * Copyright 2025 Jonathan R. Guthrie
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@
 EchoSession::EchoSession(EchoMaster *master, SessionDriver *driver) : InternetSession(master, driver) {
   m_master = master;
   m_server = driver->server();
-  m_driver->wantsToReceive();
   m_server->addTimerAction(new IdleTimer(m_master->idleTimeout(), this));
   m_lastTrafficTime = time(NULL);
 }
@@ -45,23 +44,28 @@ EchoSession::~EchoSession(void) {
  * quits, or unless you don't type anything for the timeout period
  */
 
-void EchoSession::receiveData(uint8_t *buffer, size_t length) {
+ SessionPromise EchoSession::sessionMain(std::coroutine_handle<> *continuationOut) {
   // If we're in the message body, there's nothing to do but accumulate the data and hand it off
   // to the request for processing.  If we're in the message header, then unpack the line, and
   // check it to see if it's significant to the session, and then pass to the request for
   // processing.  If I don't have a request, then I accumulate a line and use it to create a
   // request.
-  m_driver->wantsToSend(buffer, length);
-  if (0 == strncmp((const char *)buffer, "quit\r\n", length)) {
-    m_driver->server()->killSession(m_driver);
-  }
-  else {
-    m_lastTrafficTime = time(NULL);
-    m_driver->wantsToReceive();
-  }
+  SessionAwaiter a{continuationOut};
+  co_await a;
+
+  m_driver->sendData("Hello");
+#if 0
+  do {
+    std::string s(m_driver->receiveData());
+    if (s != std::string("quit\r\n")) {
+      m_driver->sendData(s);
+      m_lastTrafficTime = time(NULL);
+    }
+  } while (s != std::string("quit\r\n"));
+#endif /* 0 */
 }
 
 void EchoSession::idleTimeout(void) {
-  m_driver->wantsToSend("It's been too long.  Bye\r\n");
+  m_driver->sendData("It's been too long.  Bye\r\n");
   m_driver->server()->killSession(m_driver);
 }

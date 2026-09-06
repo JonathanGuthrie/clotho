@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if !defined(_ECHOSESSION_HPP_INCLUDED_)
-#define _ECHOSESSION_HPP_INCLUDED_
+#if !defined(ECHOSESSION_HPP_INCLUDED)
+#define ECHOSESSION_HPP_INCLUDED
 
 #include <internetsession.hpp>
 
@@ -31,7 +31,7 @@ private:
 public:
   EchoSession(EchoMaster *master, SessionDriver *driver);
   virtual ~EchoSession();
-  virtual void receiveData(uint8_t *buffer, size_t length);
+  virtual SessionPromise sessionMain(std::coroutine_handle<> *) override;
   time_t lastTrafficTime(void) const { return m_lastTrafficTime; }
   Server *server(void) const { return m_server; }
   void idleTimeout(void);

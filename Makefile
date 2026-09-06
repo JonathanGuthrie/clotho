@@ -14,7 +14,8 @@
 # limitations under the License.
 
 CC=g++
-CXXFLAGS=-g -Wall -fPIC
+CXXFLAGS=-g -Wall -fPIC -fcoroutines
+CPPFLAGS=-fcoroutines
 
 %.d: %.cpp
 	@set -e; rm -f $@; \
@@ -22,12 +23,13 @@ CXXFLAGS=-g -Wall -fPIC
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : Makefile ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-LDFLAGS=-lboost_thread -lcrypt -shared -Wl,-soname,libclotho.so.1
+LDFLAGS=-lboost_thread -lcrypt -shared -Wl,-soname,libclotho.so.2
 
 SOURCES=internetsession.cpp \
 	datasource.cpp \
 	socket.cpp \
 	internetserver.cpp \
+	datasource.cpp \
 	deltaqueue.cpp \
 	deltaqueueaction.cpp \
 	sessiondriver.cpp \
@@ -35,11 +37,11 @@ SOURCES=internetsession.cpp \
 	server.cpp \
 	testserver.cpp
 
-libclotho.so.1.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o testserver.o server.o
+libclotho.so.2.1: internetsession.o socket.o internetserver.o deltaqueue.o deltaqueueaction.o sessiondriver.o servermaster.o testserver.o server.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 include $(SOURCES:.cpp=.d)
 
 clean:
-	rm -f *.o *.d libclotho.so.1.1
+	rm -f *.o *.d libclotho.so.2.1
 

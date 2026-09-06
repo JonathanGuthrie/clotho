@@ -57,14 +57,15 @@ typedef ThreadPool<SessionDriver *> WorkerPool;
 
 class InternetServer : public Server {
 public:
-  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_worker_threads = 10) throw(ServerErrorException);
-  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_worker_threads = 10) throw(ServerErrorException);
+  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_worker_threads = 10);
+  InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_worker_threads = 10);
   virtual ~InternetServer();
-  virtual void run();
-  virtual void shutdown();
-  virtual void addTimerAction(DeltaQueueAction *action);
-  virtual void wantsToReceive(const Socket *sock, SessionDriver *driver);
-  virtual void killSession(SessionDriver *driver);
+  virtual void run() override;
+  virtual void shutdown() override;
+  virtual void addTimerAction(DeltaQueueAction *action) override;
+  virtual void wantsToReceive(const Socket *sock, SessionDriver *driver) override;
+  virtual void wantsToSend(const Socket *sock, SessionDriver *driver) override;
+  virtual void killSession(SessionDriver *driver) override;
 
 private:
   bool m_isRunning;

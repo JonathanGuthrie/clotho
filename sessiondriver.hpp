@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#if !defined(_SESSIONDRIVER_HPP_INCLUDED_)
-#define _SESSIONDRIVER_HPP_INCLUDED_
+#if !defined(SESSIONDRIVER_HPP_INCLUDED_)
+#define SESSIONDRIVER_HPP_INCLUDED_
 
-#include <string.h>
+#include <string>
 #include <stdint.h>
+#include <concepts>
+#include <coroutine>
 
 #include <boost/thread.hpp>
 
@@ -49,15 +51,15 @@ public:
   ServerMaster *master(void) const { return m_master; }
   void lock(void);
   void unlock(void);
-  void wantsToReceive(void);
-  void wantsToSend(const std::string &s) const { wantsToSend((uint8_t *)s.data(), s.size()); }
-  void wantsToSend(const insensitiveString &s) const { wantsToSend((uint8_t *)s.data(), s.size()); }
-  void wantsToSend(const char *buffer, size_t length) const { wantsToSend((uint8_t *)buffer, length); }
-  void wantsToSend(const char *buffer) const { wantsToSend((uint8_t *)buffer, strlen(buffer)); }
-  void wantsToSend(const uint8_t *buffer, size_t length) const;
+  void sendData(const std::string &s) const { sendData((uint8_t *)s.data(), s.size()); }
+  void sendData(const insensitiveString &s) const { sendData((uint8_t *)s.data(), s.size()); }
+  void sendData(const char *buffer, size_t length) const { sendData((uint8_t *)buffer, length); }
+  void sendData(const char *buffer) const { sendData((uint8_t *)buffer, strlen(buffer)); }
+  void sendData(const uint8_t *buffer, size_t length) const;
+  void receiveData(uint8_t *buffer, size_t size) const;
   // As soon as the DataSource class's fetch method returns 0, the destructor
   // for the passed pointer will be called
-  void wantsToSend(DataSource *source);
+  // void wantsToSend(DataSource *source);
   void startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile);
   bool connectionIsEncrypted(void) const;
 
@@ -67,6 +69,7 @@ private:
   InternetSession *m_session;
   ServerMaster *m_master;
   boost::mutex *m_workMutex;
+  std::coroutine_handle<> m_coroutineHandle;
 };
 
-#endif //_SESSIONDRIVER_HPP_INCLUDED_
+#endif // SESSIONDRIVER_HPP_INCLUDED_

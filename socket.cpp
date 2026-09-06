@@ -34,7 +34,7 @@ Socket::Socket(int socket, struct sockaddr_in address)  {
   this->m_send = &Socket::socket_send;
 }
 
-Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(SocketSocketErrorException, SocketBindErrorException) {
+Socket::Socket(uint32_t bind_address, short bind_port, int backlog) {
   m_tlsSession = NULL;
   m_x509Credentials = NULL;
   m_priorityCache = NULL;
@@ -67,7 +67,7 @@ Socket::Socket(uint32_t bind_address, short bind_port, int backlog) throw(Socket
 }
 
 
-Socket::Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog) throw(SocketSocketErrorException, SocketBindErrorException) {
+Socket::Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog) {
   m_keyfile = keyfile;
   m_certfile = certfile;
   m_cafile = cafile;
@@ -105,7 +105,7 @@ Socket::Socket(uint32_t bind_address, short bind_port, const std::string &keyfil
 }
 
 
-Socket *Socket::accept(void) throw(TlsException) {
+Socket *Socket::accept(void) {
   struct sockaddr_in temp;
   socklen_t address_len;
   int temp_socket;
@@ -168,7 +168,7 @@ ssize_t Socket::tls_receive(uint8_t *buffer, size_t size) {
   return ret;
 }
 
-int Socket::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException) {
+int Socket::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) {
   int ret = -1;
   if (!this->m_isEncrypted) {
     m_keyfile = keyfile;
@@ -196,7 +196,7 @@ int Socket::startTls(const std::string &keyfile, const std::string &certfile, co
     gnutls_credentials_set(m_tlsSession, GNUTLS_CRD_CERTIFICATE, m_x509Credentials);
 
     gnutls_certificate_server_set_request(m_tlsSession, GNUTLS_CERT_IGNORE);
-    gnutls_transport_set_ptr(m_tlsSession, (gnutls_transport_ptr_t) m_sock);
+    gnutls_transport_set_int(m_tlsSession, m_sock);
 
     do {
       ret = gnutls_handshake(m_tlsSession);

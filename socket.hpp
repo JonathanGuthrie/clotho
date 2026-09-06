@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if !defined(_SOCKET_HPP_INCLUDED_)
-#define _SOCKET_HPP_INCLUDED_
+#if !defined(SOCKET_HPP_INCLUDED)
+#define SOCKET_HPP_INCLUDED
 
 /*
  * Your basic IP socket impelementation
@@ -68,12 +68,12 @@ private:
 
 public:
   // For an unencrypted socket
-  Socket(uint32_t bind_address, short bind_port, int backlog = 16384) throw(SocketSocketErrorException, SocketBindErrorException);
+  Socket(uint32_t bind_address, short bind_port, int backlog = 16384);
   // For an SSL socket
-  Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog = 16384) throw(SocketSocketErrorException, SocketBindErrorException);
-  Socket *accept(void) throw(TlsException);
+  Socket(uint32_t bind_address, short bind_port, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int backlog = 16384);
+  Socket *accept(void);
 
-  int startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) throw(TlsException);
+  int startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile);
   
   ~Socket();
 
@@ -84,4 +84,4 @@ public:
   bool isEncrypted() const { return m_isEncrypted; }
 };
 
-#endif // _SOCKET_HPP_INCLUDED_
+#endif // SOCKET_HPP_INCLUDED

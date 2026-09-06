@@ -35,17 +35,9 @@ SessionDriver::~SessionDriver(void) {
 
 
 void SessionDriver::doWork(void) {
-  uint8_t recvBuffer[1000];
-  // When it gets here, it knows that the receive on Sock will not block
-  ssize_t numOctets = m_sock->receive(recvBuffer, 1000);
-  if (0 < numOctets) {
     lock();
-    m_session->receiveData(recvBuffer, numOctets);
+    m_coroutineHandle();  //SYZYGY  -- the m_session->sessionMain() is part of the m_coroutineHandle
     unlock();
-  }
-  else {
-    m_server->killSession(this);
-  }
 }
 
 
@@ -60,15 +52,19 @@ void SessionDriver::destroySession(void) {
 void SessionDriver::newSession(Socket *s) {
   m_sock = s;
   m_session = m_master->newSession(this, m_server);
+  m_session->sessionMain(&m_coroutineHandle);
+  m_server->wantsToSend(m_sock, this);
 }
 
 
-void SessionDriver::wantsToReceive(void) {
-  m_server->wantsToReceive(m_sock, this);
+void SessionDriver::sendData(const uint8_t *buffer, size_t length) const {
+    // TODO:  Set this up to do an asynchronous write, and start up again when it's done
+    m_sock->send(buffer, length);
 }
 
-void SessionDriver::wantsToSend(const uint8_t *buffer, size_t length) const {
-  m_sock->send(buffer, length);
+// TODO:  What the heck should this receive?  Look to the boost socket library
+// Okay, it passes some mutable buffers and returns a size_t.  We'll get around to that
+void SessionDriver::receiveData(uint8_t *buffer, size_t size) const {
 }
 
 void SessionDriver::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) {

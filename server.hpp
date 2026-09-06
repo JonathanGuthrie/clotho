@@ -68,6 +68,7 @@ public:
   virtual void shutdown() = 0;
   virtual void addTimerAction(DeltaQueueAction *action) = 0;
   virtual void wantsToReceive(const Socket *sock, SessionDriver *driver) = 0;
+  virtual void wantsToSend(const Socket *sock, SessionDriver *driver) = 0;
   virtual void killSession(SessionDriver *driver) = 0;
 };
 

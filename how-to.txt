@@ -51,7 +51,7 @@ method.
 
 Another class you'll probably want to implement is what I call a master.  It is
 derived from the ServerMaster class.  As I've said before, the purpose of the
-master class is to know all of the configuration items requird for the server.
+master class is to know all of the configuration items required for the server.
 Since the configuration of the session could be done in the initializer for the
 session class, it is the master class that actually calls new to create a
 session instance.  Beyond that, you can organize things however you want.  You

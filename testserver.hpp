@@ -41,7 +41,7 @@ class InternetSession;
 class TestServer : public Server {
 public:
   typedef std::list<DeltaQueueAction> ActionQueue;
-  TestServer(ServerMaster *master) throw(ServerErrorException);
+  TestServer(ServerMaster *master);
   virtual ~TestServer();
   virtual void run(void);
   virtual void test(Socket *s);

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if !defined(_INTERNETSESSION_HPP_INCLUDED_)
-#define _INTERNETSESSION_HPP_INCLUDED_
+#if !defined(INTERNETSESSION_HPP_INCLUDED)
+#define INTERNETSESSION_HPP_INCLUDED
 
 /*
  * A derivative of the InternetSession class is instantiated for each connection from a client.
@@ -25,14 +25,55 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <coroutine>
 
 class ServerMaster;
 class SessionDriver;
 
+struct SessionPromise {
+    struct promise_type {
+	    enum promiseAction {
+    	    wantsToReceive,
+	        wantsToSend
+	    };
+	    promiseAction m_action;
+        uint8_t *m_buffer;
+	    size_t m_bufferLen;
+
+        ~promise_type() { }
+        SessionPromise get_return_object() {
+            return {              
+                // Uses C++20 designated initializer syntax
+                .h_ = std::coroutine_handle<promise_type>::from_promise(*this)
+            };
+        }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_never final_suspend() noexcept { return {}; }
+        void unhandled_exception() {}
+        std::suspend_always yield_value(promiseAction value) {
+            m_action = value;
+            return {};
+        }
+        void return_void() {}
+    };
+
+    std::coroutine_handle<promise_type> h_;
+};
+
+
+struct SessionAwaiter {
+  std::coroutine_handle<> *m_coroutineHandle;
+  bool await_ready() const noexcept { return false; } // says yes call await_suspend
+  void await_suspend(std::coroutine_handle<> h) {
+    *m_coroutineHandle = h;
+  }
+  constexpr void await_resume() const noexcept { }
+};
+
 class InternetSession {
 public:
   InternetSession(ServerMaster *master, SessionDriver *driver);
-  virtual void receiveData(uint8_t *buffer, size_t size) = 0;
+  virtual SessionPromise sessionMain(std::coroutine_handle<>*) = 0;
   virtual ~InternetSession();
   SessionDriver *driver() const { return m_driver; }
   ServerMaster *master() const { return m_master; }
@@ -42,4 +83,4 @@ protected:
   SessionDriver *m_driver;
 };
 
-#endif //_INTERNETSESSION_HPP_INCLUDED_
+#endif // INTERNETSESSION_HPP_INCLUDED

@@ -22,7 +22,70 @@ done)  Push to GitHub
 
 11)  Deal with the case where the socket might block on transmit.  Includes defining a response class
 
-12)  Add support for things like STARTTLS and sockets that are encrypted from the beginning.
+     Actually, this is an interesting thing.  I'm going to replace the current thread/function call
+     semantics with coroutines.  That means none of my gyrations where I have to exit out of the
+     current state and mark the task as wanting to receive just to receive some data.  Instead, I'll
+     just call receive and the right things will happen behind the scenes.  I just don't yet know what
+     those right things are.
+
+     Okay, start with the receive.  When I call receive, I need to switch to the listener coroutine,
+     which then fires up and sets up the select or whatever.  When that returns, then it switches back
+     to the coroutine that is waiting to receive.  Sending is similar.
+
+     Now, how do I set it up?  Well, it looks a lot like the producer/consumer pattern.
+
+     When I launch the thread, then it starts in the consumer which eventually calls either receive or
+     send.  That switches to the producer coroutine which saves all the state needed to tell how to get
+     back, triggers the correct action in the listener thread, and then takes itself out of the ready to
+     execute state.  Then, when the thing it's waiting for happens, and DoWork() is called, it gets put
+     back into the ready to execute state, and the producer hands off to the consumer using the coroutine
+     mechanism.  Currently, all the initialization stuff is in the constructor, which is called by the
+     master.  (The master is the one to create it because the master knows how to configure a session.)
+     I need to not do that.  Move it to an initialization function?  Well, no.  I want a method in the
+     session that executes for the entire session.  So, it would be a session function.  So, call it
+     do_session or some such.  Or maybe just "session".  Yeah, just session.
+
+     So, the InternetServer::listenerThreadFunction calls SessionDriver::newSession(), and
+     SessionDriver::newSession() calls Master::newSession().  In the current version of the library,
+     Master::newSession() calls the Session constructor, which does any initialization which is
+     needed (sets timers, sends some initial data, indicates its desire to receive from the client,
+     or whatever,) and returns.  The new version will execute the constructor, which only does data
+     initialization, and then will call doWork() in the initializing state.  The doWork() method will
+     then (because it's in the initializing state) begin executing the session coroutine, and eventually
+     the session coroutine will call send() or receive(), which will setup whichever operation is
+     supposed to happen and then yield back to doWork(), which will then exit.  At some future time,
+     doWork will be called.  It will then see what's supposed to be happening and switch to the low level
+     coroutine, which will do it's thing until send() or receive is called, at which point the coroutine
+     switches back to doWork(), which then exits.
+
+     An open question is how to handle exiting, but I think that I can figure that out.  I need to remove
+     the session from the session table, execute the destructor, and close the socket.  Maybe not in that
+     order, but it's a lot easier to understand than getting it started.
+
+     UPDATE
+
+     Okay, I'm tired of waiting for coroutines.  Fortunately, the boost C++ library has these things
+     called fibers.  The way I think I want it to go works like this:  Each worker thread will have a
+     fiber, and each session will have a fiber.  When the session is created, it will start at some
+     sort of main function which will be associated with creating the session's fiber, and that main
+     function will then call the appropriate send or receive function when it needs to send or receive
+     something.  Then, the the process will switch to the thread's fiber and session fiber will be
+     detached from the current thread.  When doWork is called, then the process is reversed.  The
+     session fiber will be attached to the crrent thread, and execution will switch to that fiber.
+     Work on that session will continue until it either tries to send or receive something or
+     ultimately exits.
+
+     So, the session driver class must be modified because it's got to have the session's fiber
+     status in it.  It looks like the ThreadPool needs to be modified for the per-thread fiber and
+     SessionDriver must be modified for the per-session thread.  Start with ThreadPool?  a
+
+     UPDATE^2
+
+     I never figured out fibers, but I think I can do coroutines.
+
+12)  Add support for tags.  This should have been in since the beginning, but I really didn't understand tags.
+
+13)  Add support for things like STARTTLS and sockets that are encrypted from the beginning.
 
 TLS requires additional configuration parameters.  To begin with, I'm going to require X.509 authentication and allow for "OCSP stapling" (whatever that is) and for that, I need a key file, a certificate file, a CA file, and a CRL file.  The "OCSP stapling" (whatever that is) requires an OCSP status file.
 
@@ -30,8 +93,8 @@ Need to recalculate the diffie-hellman params
 
 Need to replace the constant "1024" in the diffie-hellman bits with a better value, once I have a more up to date version of the library
 
-13)  Add doxygen header blocks.
+14)  Add doxygen header blocks.
 
-14) Unit tests
+15) Unit tests
 
 done)  Change to use boost instead of pthread

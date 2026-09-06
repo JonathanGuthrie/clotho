@@ -26,7 +26,7 @@
 
 #include "ThreadPool.hpp"
 
-InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) throw(ServerErrorException) {
+InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, int num_workers) {
   m_timerQueue = new DeltaQueue;
   m_workerCount = num_workers;
   m_master = master;
@@ -36,7 +36,7 @@ InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMas
 }
 
 
-InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_workers) throw(ServerErrorException) {
+InternetServer::InternetServer(uint32_t bind_address, short bind_port, ServerMaster *master, const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile, int num_workers) {
   m_timerQueue = new DeltaQueue;
   m_workerCount = num_workers;
   m_master = master;
@@ -136,6 +136,15 @@ void *InternetServer::timerQueueFunction(void *d) {
 void InternetServer::wantsToReceive(const Socket *sock, SessionDriver *driver) {
   struct epoll_event event;
   event.events = EPOLLIN | EPOLLONESHOT;
+  event.data.ptr = driver;
+  errno = 0;
+  epoll_ctl(m_epollFd, EPOLL_CTL_MOD, sock->sockNum(), &event);
+}
+
+
+void InternetServer::wantsToSend(const Socket *sock, SessionDriver *driver) {
+  struct epoll_event event;
+  event.events = EPOLLOUT | EPOLLONESHOT;
   event.data.ptr = driver;
   errno = 0;
   epoll_ctl(m_epollFd, EPOLL_CTL_MOD, sock->sockNum(), &event);

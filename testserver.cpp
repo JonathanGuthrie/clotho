@@ -19,7 +19,7 @@
 #include "testserver.hpp"
 #include "sessiondriver.hpp"
 
-TestServer::TestServer(ServerMaster *master) throw(ServerErrorException) : m_master(master) {
+TestServer::TestServer(ServerMaster *master) : m_master(master) {
   m_testSocket = NULL;
   m_driver = NULL;
 }

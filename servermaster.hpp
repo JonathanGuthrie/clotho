@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#if !defined(_SERVERMASTER_HPP_INCLUDED_)
-#define _SERVERMASTER_HPP_INCLUDED_
+#if !defined(SERVERMASTER_HPP_INCLUDED)
+#define SERVERMASTER_HPP_INCLUDED
 
 /*
  * Classes derived from this class allow for the configuration of Internet servers
@@ -34,4 +34,4 @@ public:
   virtual InternetSession *newSession(SessionDriver *driver, Server *server) = 0;
 };
 
-#endif //_SERVERMASTER_HPP_INCLUDED_
+#endif //SERVERMASTER_HPP_INCLUDED

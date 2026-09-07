@@ -57,6 +57,8 @@ public:
   void sendData(const char *buffer) const { sendData((uint8_t *)buffer, strlen(buffer)); }
   void sendData(const uint8_t *buffer, size_t length) const;
   void receiveData(uint8_t *buffer, size_t size) const;
+  void setUpSend(void) { m_wantsToSend = true; }
+  void setUpReceive(void) { m_wantsToReceive = true; }
   // As soon as the DataSource class's fetch method returns 0, the destructor
   // for the passed pointer will be called
   // void wantsToSend(DataSource *source);
@@ -70,6 +72,8 @@ private:
   ServerMaster *m_master;
   boost::mutex *m_workMutex;
   std::coroutine_handle<> m_coroutineHandle;
+  bool m_wantsToSend;
+  bool m_wantsToReceive;
 };
 
 #endif // SESSIONDRIVER_HPP_INCLUDED_

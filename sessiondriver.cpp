@@ -35,9 +35,17 @@ SessionDriver::~SessionDriver(void) {
 
 
 void SessionDriver::doWork(void) {
-    lock();
-    m_coroutineHandle();  //SYZYGY  -- the m_session->sessionMain() is part of the m_coroutineHandle
-    unlock();
+  lock();
+  m_coroutineHandle();  // SYZYGY  -- the m_session->sessionMain() is part of the m_coroutineHandle
+  if (m_wantsToSend) {
+    m_server->wantsToSend(m_sock, this);
+  }
+  if (m_wantsToReceive) {
+    m_server->wantsToReceive(m_sock, this);
+  }
+  m_wantsToSend = false;
+  m_wantsToReceive = false;
+  unlock();
 }
 
 
@@ -52,7 +60,7 @@ void SessionDriver::destroySession(void) {
 void SessionDriver::newSession(Socket *s) {
   m_sock = s;
   m_session = m_master->newSession(this, m_server);
-  m_session->sessionMain(&m_coroutineHandle);
+  m_coroutineHandle = m_session->sessionMain();
   m_server->wantsToSend(m_sock, this);
 }
 

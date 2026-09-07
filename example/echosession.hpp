@@ -31,7 +31,7 @@ private:
 public:
   EchoSession(EchoMaster *master, SessionDriver *driver);
   virtual ~EchoSession();
-  virtual SessionPromise sessionMain(std::coroutine_handle<> *) override;
+  virtual SessionPromise sessionMain(void) override;
   time_t lastTrafficTime(void) const { return m_lastTrafficTime; }
   Server *server(void) const { return m_server; }
   void idleTimeout(void);

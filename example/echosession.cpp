@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include <string.h>
+#include <string>
 #include <time.h>
 
 #include <internetserver.hpp>
@@ -25,6 +25,7 @@
 #include "echosession.hpp"
 #include "echomaster.hpp"
 #include "idletimer.hpp"
+#include "socket.hpp"
 
 EchoSession::EchoSession(EchoMaster *master, SessionDriver *driver) : InternetSession(master, driver) {
   m_master = master;
@@ -44,25 +45,30 @@ EchoSession::~EchoSession(void) {
  * quits, or unless you don't type anything for the timeout period
  */
 
- SessionPromise EchoSession::sessionMain(std::coroutine_handle<> *continuationOut) {
+ SessionPromise EchoSession::sessionMain(void) {
   // If we're in the message body, there's nothing to do but accumulate the data and hand it off
   // to the request for processing.  If we're in the message header, then unpack the line, and
   // check it to see if it's significant to the session, and then pass to the request for
   // processing.  If I don't have a request, then I accumulate a line and use it to create a
   // request.
-  SessionAwaiter a{continuationOut};
-  co_await a;
-
-  m_driver->sendData("Hello");
-#if 0
+  m_driver->sendData("Hello\r\n");
+  uint8_t buffer[8193];
+  std::string s;
   do {
-    std::string s(m_driver->receiveData());
-    if (s != std::string("quit\r\n")) {
-      m_driver->sendData(s);
+    m_driver->setUpReceive();
+    co_await std::suspend_always{};
+    ssize_t numOctets = m_driver->socket()->receive(buffer, 8192);
+    buffer[numOctets] = '\0';
+    s = std::string((char*)buffer);
+    std::cout << "recieved \"" << s << "\" which is " << numOctets << " of data" << std::endl;
+    if (0 != strcmp((char*)buffer, "quit\r\n")) {
+      m_driver->setUpSend();
+      co_await std::suspend_always{};
+      m_driver->sendData(buffer, numOctets);
       m_lastTrafficTime = time(NULL);
     }
-  } while (s != std::string("quit\r\n"));
-#endif /* 0 */
+  } while (0 != strcmp((char*)buffer, "quit\r\n"));
+  co_return;
 }
 
 void EchoSession::idleTimeout(void) {

@@ -36,15 +36,20 @@ SessionDriver::~SessionDriver(void) {
 
 void SessionDriver::doWork(void) {
   lock();
-  m_coroutineHandle();  // SYZYGY  -- the m_session->sessionMain() is part of the m_coroutineHandle
-  if (m_wantsToSend) {
-    m_server->wantsToSend(m_sock, this);
+  m_coroutineHandle();
+  if (!m_coroutineHandle.done()) {
+    if (m_wantsToSend) {
+      m_server->wantsToSend(m_sock, this);
+    }
+    if (m_wantsToReceive) {
+      m_server->wantsToReceive(m_sock, this);
+    }
+    m_wantsToSend = false;
+    m_wantsToReceive = false;
   }
-  if (m_wantsToReceive) {
-    m_server->wantsToReceive(m_sock, this);
+  else {
+    m_server->killSession(this);
   }
-  m_wantsToSend = false;
-  m_wantsToReceive = false;
   unlock();
 }
 

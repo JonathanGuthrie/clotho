@@ -19,7 +19,7 @@
 #include "servermaster.hpp"
 #include "socket.hpp"
 
-SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master) {
+SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master), m_wantsToSend(false), m_wantsToReceive(false) {
   m_workMutex = new boost::mutex();
 }
 

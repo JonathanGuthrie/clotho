@@ -49,7 +49,7 @@ EchoSession::~EchoSession(void) {
   // check it to see if it's significant to the session, and then pass to the request for
   // processing.  If I don't have a request, then I accumulate a line and use it to create a
   // request.
-  m_driver->sendData("Hello\r\n");
+  m_driver->sendData("Hello User!  Write something to me, and I'll echo it back.\r\n\r\nWrite 'quit' to quit.\r\n");
   uint8_t buffer[8193];
   std::string s;
   do {

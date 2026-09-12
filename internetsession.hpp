@@ -47,7 +47,7 @@ struct SessionPromise {
           .h_ = std::coroutine_handle<promise_type>::from_promise(*this)
         };
       }
-      std::suspend_never initial_suspend() { return {}; }
+      std::suspend_always initial_suspend() { return {}; }
       std::suspend_never final_suspend() noexcept { return {}; }
       void unhandled_exception() {}
       std::suspend_always yield_value(promiseAction value) {

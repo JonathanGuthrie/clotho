@@ -99,7 +99,7 @@ void *InternetServer::listenerThreadFunction(void *d) {
     t->m_sessions.insert(session);
     struct epoll_event event;
     event.events = 0;
-    event.data.ptr = NULL;
+    event.data.ptr = session;
     errno = 0;
     epoll_ctl(t->m_epollFd, EPOLL_CTL_ADD, worker->sockNum(), &event);
     session->newSession(worker);

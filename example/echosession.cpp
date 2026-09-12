@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <iostream>
-
 #include <string>
 #include <time.h>
 
@@ -60,14 +58,13 @@ EchoSession::~EchoSession(void) {
     ssize_t numOctets = m_driver->socket()->receive(buffer, 8192);
     buffer[numOctets] = '\0';
     s = std::string((char*)buffer);
-    std::cout << "recieved \"" << s << "\" which is " << numOctets << " of data" << std::endl;
-    if (0 != strcmp((char*)buffer, "quit\r\n")) {
+    if (s != "quit\r\n") {
       m_driver->setUpSend();
       co_await std::suspend_always{};
       m_driver->sendData(buffer, numOctets);
       m_lastTrafficTime = time(NULL);
     }
-  } while (0 != strcmp((char*)buffer, "quit\r\n"));
+  } while (s != "quit\r\n");
   co_return;
 }
 

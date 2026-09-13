@@ -32,6 +32,32 @@ class Server;
 class InternetSession;
 class ServerMaster;
 class Socket;
+class SessionDriver;
+
+struct SessionPromise {
+    struct promise_type {
+      ~promise_type() { }
+      SessionPromise get_return_object() {
+      return {
+          // Uses C++20 designated initializer syntax
+          .h_ = std::coroutine_handle<promise_type>::from_promise(*this)
+        };
+      }
+      std::suspend_always initial_suspend() { return {}; }
+      std::suspend_never final_suspend() noexcept { return {}; }
+      void unhandled_exception() {}
+      std::suspend_always yield_value(void) {
+        return {};
+      }
+      void return_void() {}
+  };
+
+  auto await_transform(std::string *s);
+  std::coroutine_handle<promise_type> h_;
+  operator std::coroutine_handle<promise_type>() const { return h_; }
+  operator std::coroutine_handle<>() const { return h_; }
+  SessionDriver *m_driver;
+};
 
 // The SessionDriver class sits between the server, which does the listening
 // for more data, and the InternetSession, which does all the processing of the
@@ -52,18 +78,16 @@ public:
   void lock(void);
   void unlock(void);
   void sendData(const std::string &s) const { sendData((uint8_t *)s.data(), s.size()); }
-  void sendData(const insensitiveString &s) const { sendData((uint8_t *)s.data(), s.size()); }
-  void sendData(const char *buffer, size_t length) const { sendData((uint8_t *)buffer, length); }
-  void sendData(const char *buffer) const { sendData((uint8_t *)buffer, strlen(buffer)); }
   void sendData(const uint8_t *buffer, size_t length) const;
-  void receiveData(uint8_t *buffer, size_t size) const;
-  void setUpSend(void) { m_wantsToSend = true; }
+  void setUpSend(std::string s) { m_s = s; m_wantsToReceive = false; }
   void setUpReceive(void) { m_wantsToReceive = true; }
   // As soon as the DataSource class's fetch method returns 0, the destructor
   // for the passed pointer will be called
   // void wantsToSend(DataSource *source);
   void startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile);
   bool connectionIsEncrypted(void) const;
+  std::coroutine_handle<> *coroutineHandle(void) { return &m_coroutineHandle; }
+  std::string receivedString(void) { return std::move(m_s); }
 
 private:
   Server *m_server;
@@ -72,8 +96,39 @@ private:
   ServerMaster *m_master;
   boost::mutex *m_workMutex;
   std::coroutine_handle<> m_coroutineHandle;
-  bool m_wantsToSend;
   bool m_wantsToReceive;
+  uint8_t m_buffer[8193];
+  std::string m_s;
+};
+
+
+struct SessionSendAwaiter {
+  std::coroutine_handle<> *m_coroutineHandle;
+  SessionDriver *m_driver;
+  std::string m_send;
+
+  bool await_ready() const noexcept { return false; } // says yes call await_suspend
+  void await_suspend(std::coroutine_handle<> h) {
+    *m_coroutineHandle = h;
+    m_driver->setUpSend(std::move(m_send));
+  }
+  void await_resume(void) const noexcept {};
+  SessionSendAwaiter(SessionDriver *driver, std::string s) : m_driver(driver), m_send(s)  { m_coroutineHandle = m_driver->coroutineHandle(); }
+};
+
+
+struct SessionReceiveAwaiter {
+  std::coroutine_handle<> *m_coroutineHandle;
+  SessionDriver *m_driver;
+  std::string m_string;
+
+  bool await_ready() const noexcept { return false; } // says yes call await_suspend
+  void await_suspend(std::coroutine_handle<> h) {
+    *m_coroutineHandle = h;
+    m_driver->setUpReceive();
+  }
+  std::string await_resume(void) const noexcept { return m_driver->receivedString(); }
+  SessionReceiveAwaiter(SessionDriver *driver) : m_driver(driver)  { m_coroutineHandle = m_driver->coroutineHandle(); }
 };
 
 #endif // SESSIONDRIVER_HPP_INCLUDED_

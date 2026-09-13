@@ -44,24 +44,23 @@ EchoSession::~EchoSession(void) {
  */
 
  SessionPromise EchoSession::sessionMain(void) {
-  // If we're in the message body, there's nothing to do but accumulate the data and hand it off
-  // to the request for processing.  If we're in the message header, then unpack the line, and
-  // check it to see if it's significant to the session, and then pass to the request for
-  // processing.  If I don't have a request, then I accumulate a line and use it to create a
-  // request.
+  // When we get here, we're guaranteed that we 're clear to send to the other end.
+  // That's the we get the session into a worker thread
   m_driver->sendData("Hello User!  Write something to me, and I'll echo it back.\r\n\r\nWrite 'quit' to quit.\r\n");
-  uint8_t buffer[8193];
+
+  /*
+   * Okay, I want the receive line to look something like:
+   * s = co_await receive_awaiter(m_driver);
+   *
+   * and the send line to look something like this:
+   * so_await send_awaiter(m_driver, s);
+   *
+   */
   std::string s;
   do {
-    m_driver->setUpReceive();
-    co_await std::suspend_always{};
-    ssize_t numOctets = m_driver->socket()->receive(buffer, 8192);
-    buffer[numOctets] = '\0';
-    s = std::string((char*)buffer);
+    s = co_await SessionReceiveAwaiter{m_driver};
     if (s != "quit\r\n") {
-      m_driver->setUpSend();
-      co_await std::suspend_always{};
-      m_driver->sendData(buffer, numOctets);
+      co_await SessionSendAwaiter{m_driver, s};
       m_lastTrafficTime = time(NULL);
     }
   } while (s != "quit\r\n");

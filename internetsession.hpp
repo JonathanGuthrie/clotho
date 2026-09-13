@@ -29,48 +29,7 @@
 
 class ServerMaster;
 class SessionDriver;
-
-struct SessionPromise {
-    struct promise_type {
-	    enum promiseAction {
-    	    wantsToReceive,
-	        wantsToSend
-	    };
-	    promiseAction m_action;
-      uint8_t *m_buffer;
-	    size_t m_bufferLen;
-
-      ~promise_type() { }
-      SessionPromise get_return_object() {
-      return {              
-          // Uses C++20 designated initializer syntax
-          .h_ = std::coroutine_handle<promise_type>::from_promise(*this)
-        };
-      }
-      std::suspend_always initial_suspend() { return {}; }
-      std::suspend_never final_suspend() noexcept { return {}; }
-      void unhandled_exception() {}
-      std::suspend_always yield_value(promiseAction value) {
-        m_action = value;
-        return {};
-      }
-      void return_void() {}
-  };
-
-  std::coroutine_handle<promise_type> h_;
-  operator std::coroutine_handle<promise_type>() const { return h_; }
-  operator std::coroutine_handle<>() const { return h_; }
-};
-
-
-struct SessionAwaiter {
-  std::coroutine_handle<> *m_coroutineHandle;
-  bool await_ready() const noexcept { return false; } // says yes call await_suspend
-  void await_suspend(std::coroutine_handle<> h) {
-    *m_coroutineHandle = h;
-  }
-  constexpr void await_resume() const noexcept { }
-};
+struct SessionPromise;
 
 class InternetSession {
 public:

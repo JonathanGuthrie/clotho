@@ -19,7 +19,7 @@
 #include "servermaster.hpp"
 #include "socket.hpp"
 
-SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master), m_wantsToSend(false), m_wantsToReceive(false) {
+SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master), m_wantsToReceive(false) {
   m_workMutex = new boost::mutex();
 }
 
@@ -36,16 +36,22 @@ SessionDriver::~SessionDriver(void) {
 
 void SessionDriver::doWork(void) {
   lock();
+  if (m_wantsToReceive) {
+    ssize_t numOctets = m_sock->receive(m_buffer, 8192);
+    m_buffer[numOctets] = '\0';
+    m_s = std::string{(char*)m_buffer};
+  }
+  else {
+    sendData(m_s);
+  }
   m_coroutineHandle();
   if (!m_coroutineHandle.done()) {
-    if (m_wantsToSend) {
-      m_server->wantsToSend(m_sock, this);
-    }
     if (m_wantsToReceive) {
       m_server->wantsToReceive(m_sock, this);
     }
-    m_wantsToSend = false;
-    m_wantsToReceive = false;
+    else {
+      m_server->wantsToSend(m_sock, this);
+    }
   }
   else {
     m_server->killSession(this);
@@ -69,15 +75,9 @@ void SessionDriver::newSession(Socket *s) {
   m_server->wantsToSend(m_sock, this);
 }
 
-
 void SessionDriver::sendData(const uint8_t *buffer, size_t length) const {
     // TODO:  Set this up to do an asynchronous write, and start up again when it's done
     m_sock->send(buffer, length);
-}
-
-// TODO:  What the heck should this receive?  Look to the boost socket library
-// Okay, it passes some mutable buffers and returns a size_t.  We'll get around to that
-void SessionDriver::receiveData(uint8_t *buffer, size_t size) const {
 }
 
 void SessionDriver::startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile) {
@@ -91,16 +91,6 @@ void SessionDriver::startTls(const std::string &keyfile, const std::string &cert
 bool SessionDriver::connectionIsEncrypted(void) const {
   return m_sock->isEncrypted();
 }
-
-#if 0
-void SessionDriver::wantsToSend(DataSource *source) {
-  m_source = source;
-  // I need to think about how to implement this.  Each socket seems to need a
-  // buffer, but I don't necessarily get who manages that buffer.
-  m_sock->send()
-  // SYZYGY
-}
-#endif // 0
 
 void SessionDriver::lock(void) {
   if (NULL != m_workMutex) {

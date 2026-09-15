@@ -61,6 +61,7 @@ void SessionDriver::doWork(void) {
 
 
 void SessionDriver::destroySession(void) {
+  m_coroutineHandle.destroy();
   delete m_session;
   m_session = NULL;
   delete m_sock;

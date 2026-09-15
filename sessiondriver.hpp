@@ -44,7 +44,7 @@ struct SessionPromise {
         };
       }
       std::suspend_always initial_suspend() { return {}; }
-      std::suspend_never final_suspend() noexcept { return {}; }
+      std::suspend_always final_suspend() noexcept { return {}; }
       void unhandled_exception() {}
       std::suspend_always yield_value(void) {
         return {};
@@ -87,7 +87,7 @@ public:
   void startTls(const std::string &keyfile, const std::string &certfile, const std::string &cafile, const std::string &crlfile);
   bool connectionIsEncrypted(void) const;
   std::coroutine_handle<> *coroutineHandle(void) { return &m_coroutineHandle; }
-  std::string receivedString(void) { return std::move(m_s); }
+  std::string receivedString(void) { return m_s; }
 
 private:
   Server *m_server;

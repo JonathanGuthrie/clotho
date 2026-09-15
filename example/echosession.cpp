@@ -64,7 +64,6 @@ EchoSession::~EchoSession(void) {
       m_lastTrafficTime = time(NULL);
     }
   } while (s != "quit\r\n");
-  co_return;
 }
 
 void EchoSession::idleTimeout(void) {

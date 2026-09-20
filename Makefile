@@ -26,10 +26,8 @@ CPPFLAGS=-fcoroutines
 LDFLAGS=-lboost_thread -lcrypt -shared -Wl,-soname,libclotho.so.2
 
 SOURCES=internetsession.cpp \
-	datasource.cpp \
 	socket.cpp \
 	internetserver.cpp \
-	datasource.cpp \
 	deltaqueue.cpp \
 	deltaqueueaction.cpp \
 	sessiondriver.cpp \

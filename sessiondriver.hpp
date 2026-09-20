@@ -26,7 +26,6 @@
 
 #include "internetsession.hpp"
 #include "insensitive.hpp"
-#include "datasource.hpp"
 
 class Server;
 class InternetSession;

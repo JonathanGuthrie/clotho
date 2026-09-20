@@ -32,6 +32,10 @@ EchoSession::EchoSession(EchoMaster *master, SessionDriver *driver) : InternetSe
   m_lastTrafficTime = time(NULL);
 }
 
+std::string EchoSession::prompt(void) const {
+   return "Hello User!  Write something to me, and I'll echo it back.\r\n\r\nWrite 'quit' to quit.\r\n";
+}
+
 EchoSession::~EchoSession(void) {
 }
 
@@ -44,18 +48,6 @@ EchoSession::~EchoSession(void) {
  */
 
  SessionPromise EchoSession::sessionMain(void) {
-  // When we get here, we're guaranteed that we 're clear to send to the other end.
-  // That's how we get the session into a worker thread
-  m_driver->sendData("Hello User!  Write something to me, and I'll echo it back.\r\n\r\nWrite 'quit' to quit.\r\n");
-
-  /*
-   * Okay, I want the receive line to look something like:
-   * s = co_await receive_awaiter(m_driver);
-   *
-   * and the send line to look something like this:
-   * so_await send_awaiter(m_driver, s);
-   *
-   */
   std::string s;
   do {
     s = co_await SessionReceiveAwaiter{m_driver};
@@ -67,6 +59,6 @@ EchoSession::~EchoSession(void) {
 }
 
 void EchoSession::idleTimeout(void) {
-  m_driver->sendData("It's been too long.  Bye\r\n");
+  // m_driver->sendData("It's been too long.  Bye\r\n");
   m_driver->server()->killSession(m_driver);
 }

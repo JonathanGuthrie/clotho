@@ -35,6 +35,7 @@ public:
   time_t lastTrafficTime(void) const { return m_lastTrafficTime; }
   Server *server(void) const { return m_server; }
   void idleTimeout(void);
+  virtual std::string prompt(void) const override;
 };
 
 #endif //_ECHOSESSION_HPP_INCLUDED_

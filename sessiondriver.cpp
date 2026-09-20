@@ -73,7 +73,7 @@ void SessionDriver::newSession(Socket *s) {
   m_sock = s;
   m_session = m_master->newSession(this, m_server);
   m_coroutineHandle = m_session->sessionMain();
-  m_wantsToReceive = false;
+  setUpSend(m_session->prompt());
   m_server->wantsToSend(m_sock, this);
 }
 

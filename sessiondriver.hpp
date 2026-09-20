@@ -77,8 +77,6 @@ public:
   ServerMaster *master(void) const { return m_master; }
   void lock(void);
   void unlock(void);
-  void sendData(const std::string &s) const { sendData((uint8_t *)s.data(), s.size()); }
-  void sendData(const uint8_t *buffer, size_t length) const;
   void setUpSend(std::string s) { m_s = s; m_wantsToReceive = false; }
   void setUpReceive(void) { m_wantsToReceive = true; }
   // As soon as the DataSource class's fetch method returns 0, the destructor
@@ -99,6 +97,8 @@ private:
   bool m_wantsToReceive;
   uint8_t m_buffer[8193];
   std::string m_s;
+  void sendData(const std::string &s) const { sendData((uint8_t *)s.data(), s.size()); }
+  void sendData(const uint8_t *buffer, size_t length) const;
 };
 
 

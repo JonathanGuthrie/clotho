@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <coroutine>
+#include <string>
 
 class ServerMaster;
 class SessionDriver;
@@ -38,6 +38,7 @@ public:
   virtual ~InternetSession();
   SessionDriver *driver() const { return m_driver; }
   ServerMaster *master() const { return m_master; }
+  virtual std::string prompt(void) const { return ""; }
 
 protected:
   ServerMaster *m_master;

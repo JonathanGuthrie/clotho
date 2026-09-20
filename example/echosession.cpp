@@ -45,7 +45,7 @@ EchoSession::~EchoSession(void) {
 
  SessionPromise EchoSession::sessionMain(void) {
   // When we get here, we're guaranteed that we 're clear to send to the other end.
-  // That's the we get the session into a worker thread
+  // That's how we get the session into a worker thread
   m_driver->sendData("Hello User!  Write something to me, and I'll echo it back.\r\n\r\nWrite 'quit' to quit.\r\n");
 
   /*

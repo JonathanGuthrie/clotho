@@ -59,6 +59,5 @@ EchoSession::~EchoSession(void) {
 }
 
 void EchoSession::idleTimeout(void) {
-  // m_driver->sendData("It's been too long.  Bye\r\n");
-  m_driver->server()->killSession(m_driver);
+  m_driver->killSession("It's been too long.  Bye\r\n");
 }

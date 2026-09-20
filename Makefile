@@ -14,7 +14,7 @@
 # limitations under the License.
 
 CC=g++
-CXXFLAGS=-g -Wall -fPIC -fcoroutines
+CXXFLAGS=-g -Wall -fPIC
 CPPFLAGS=-fcoroutines
 
 %.d: %.cpp

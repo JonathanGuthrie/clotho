@@ -19,7 +19,7 @@
 #include "servermaster.hpp"
 #include "socket.hpp"
 
-SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master), m_wantsToReceive(false) {
+SessionDriver::SessionDriver(Server *server, ServerMaster *master) : m_server(server), m_sock(NULL), m_session(NULL), m_master(master), m_wantsToReceive(false), m_needsToDie(false) {
   m_workMutex = new boost::mutex();
 }
 
@@ -45,7 +45,7 @@ void SessionDriver::doWork(void) {
     sendData(m_s);
   }
   m_coroutineHandle();
-  if (!m_coroutineHandle.done()) {
+  if (!m_needsToDie && !m_coroutineHandle.done()) {
     if (m_wantsToReceive) {
       m_server->wantsToReceive(m_sock, this);
     }
@@ -74,6 +74,7 @@ void SessionDriver::newSession(Socket *s) {
   m_session = m_master->newSession(this, m_server);
   m_coroutineHandle = m_session->sessionMain();
   setUpSend(m_session->prompt());
+  m_needsToDie = false;
   m_server->wantsToSend(m_sock, this);
 }
 
@@ -104,4 +105,10 @@ void SessionDriver::unlock(void) {
   if (NULL != m_workMutex) {
     m_workMutex->unlock();
   }
+}
+
+void SessionDriver::killSession(std::string message) {
+  m_needsToDie = true;
+  setUpSend(message);
+  m_server->wantsToSend(m_sock, this);
 }

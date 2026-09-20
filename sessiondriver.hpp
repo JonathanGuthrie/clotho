@@ -86,6 +86,10 @@ public:
   bool connectionIsEncrypted(void) const;
   std::coroutine_handle<> *coroutineHandle(void) { return &m_coroutineHandle; }
   std::string receivedString(void) { return m_s; }
+/*
+ * killSession is intended to only be called when the work mutex is being held.  DO NOT attempt to lock it again or it deadlocks
+ */
+  void killSession(std::string message);
 
 private:
   Server *m_server;
@@ -95,6 +99,7 @@ private:
   boost::mutex *m_workMutex;
   std::coroutine_handle<> m_coroutineHandle;
   bool m_wantsToReceive;
+  bool m_needsToDie;
   uint8_t m_buffer[8193];
   std::string m_s;
   void sendData(const std::string &s) const { sendData((uint8_t *)s.data(), s.size()); }
